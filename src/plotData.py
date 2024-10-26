@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+import scienceplots
+import matplotlib as mpl
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import os
 
@@ -27,6 +30,10 @@ __all__ = ["plot_eigs", "plot_dmd", "plot_S"]
 
 base_PATH = os.getcwd()  # path.dirname(os.path.realpath(__file__))
 PLOTS_PATH = f"{base_PATH}/Plots"
+
+# plt.style.use("science")
+mpl.rcParams["text.usetex"] = True
+mpl.rcParams["axes.linewidth"] = 1.5
 
 
 def _enforce_ratio(goal_ratio, supx, infx, supy, infy):
@@ -216,7 +223,7 @@ def plot_dmd(t, X, Xdmd, fileNames, ylabels, fileName=None):
 
     for i in range(len(Xdmd)):
         fig, ax = plt.subplots(figsize=(8, 6), dpi=600)
-        ax.plot(t, np.exp(Xdmd[i].real), label=f"DMD")
+        ax.plot(t, np.exp(Xdmd[i].real), label="DMD")
         ax.plot(linT, np.exp(X[i]), ".", label="data")
 
         ax.set_xlabel(r"Index", fontsize=22)
@@ -262,7 +269,7 @@ def plot_dmd_rad(X, Xdmd, fileNames, ylabels, fileName=None):
 
     for i in range(len(Xdmd) - 1):
         fig, ax = plt.subplots(figsize=(8, 6), dpi=600)
-        ax.plot(np.exp(Xdmd[0].real), np.exp(Xdmd[i + 1].real), label=f"DMD")
+        ax.plot(np.exp(Xdmd[0].real), np.exp(Xdmd[i + 1].real), label="DMD")
         ax.plot(np.exp(X[0]), np.exp(X[i + 1]), ".", label="data")
 
         ax.set_xlabel(r"Radius [km]", fontsize=22)
@@ -288,7 +295,7 @@ def plot_dmd_rad(X, Xdmd, fileNames, ylabels, fileName=None):
             top=True,
             size=4,
         )
-        plt.legend(loc=f"best", prop={"size": 10})
+        plt.legend(loc="best", prop={"size": 10})
         title_parts = [f"p{i} = {namesList[2+i]}" for i in range(len(namesList[2:]))]
         titleName = ", ".join(title_parts)
 
@@ -328,7 +335,7 @@ def plot_parametric(Xdmd, X, name, tidal=False):
             color=color,
             label="DMD",
         )
-        plt.plot(X[0], X[i + 2], ".", color=color, label=f"-data")
+        plt.plot(X[0], X[i + 2], ".", color=color, label="-data")
         # ax.set_ylim([0, 3])
         # ax.set_xlim([0, 30])
         plt.suptitle([f"p_{i} = {names[1+i]}" for i in range(len(names[1:]))])
@@ -354,11 +361,11 @@ def plot_parametric(Xdmd, X, name, tidal=False):
             top=True,
             size=4,
         )
-        plt.legend(loc=f"upper right", prop={"size": 10})
+        plt.legend(loc="upper right", prop={"size": 10})
         if i == 0:
-            plt.savefig(f"MRpredict_" + "_".join(names) + ".png")
+            plt.savefig("MRpredict_" + "_".join(names) + ".png")
         else:
-            plt.savefig(f"Tidalpredict_" + "_".join(names) + ".png")
+            plt.savefig("Tidalpredict_" + "_".join(names) + ".png")
         plt.close()
         plt.cla()
 

@@ -4,8 +4,6 @@ Last edited: 23 September 2024
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import os
 import sys
 from scipy.spatial import distance

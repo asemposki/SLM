@@ -1,4 +1,4 @@
-""" 
+"""
 Script to test parametric or general DMD code
 Author: Sudhanva Lalit
 Started: 09/14/2024

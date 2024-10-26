@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 
 # from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
-from scipy.interpolate import splprep, splev
 
 
 class TOVsolver:
@@ -324,7 +323,6 @@ class TOVsolver:
 
         return tidal_deform, k2
 
-    ### this boy takes wayyyy too much time, and what's up with central pressures? ###
     def tov_routine(self, verbose=False, write_to_file=False):
         r"""
         The TOV routine to solve each set of coupled ODEs and to output
@@ -588,12 +586,6 @@ class TOVsolver:
             kind="linear",
             fill_value="extrapolate",
         )
-        tck, u = splprep([self.total_mass, self.total_radius], s=0)
-        x_val = 1.4
-        y_val = splev(x_val, tck)
-        # print(self.total_mass, self.total_radius)
-        # print("R of 1.4 solar mass star: ", x_val, y_val)
-
         return m_r_interp(1.4)
 
 

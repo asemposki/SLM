@@ -4,19 +4,13 @@ Last edited: 20 September 2024
 """
 
 import numpy as np
-import os, sys
-import matplotlib.pyplot as plt
-import matplotlib as mpl
+import os
+import sys
 import json
-import scienceplots
 from itertools import combinations_with_replacement
 import time
 from TOV_class import TOVsolver
 from plotData import plot_eigs, plot_S, plot_dmd, plot_dmd_rad
-
-# plt.style.use("science")
-mpl.rcParams["text.usetex"] = True
-mpl.rcParams["axes.linewidth"] = 1.5
 
 base_PATH = os.getcwd()
 EOS_DATA_PATH = f"{base_PATH}/EOS_Data/"
