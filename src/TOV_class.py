@@ -71,7 +71,12 @@ class TOVsolver:
                     self.pres_array = eos_data.T[3] / self.pres0
 
                 self.nB_array = eos_data.T[1]
-                self.cs2_array = np.zeros([len(self.pres_array)])
+
+                if tidal is True:
+                    dpdeps = np.gradient(self.pres_array, self.eps_array, edge_order=2)
+                    self.cs2_array = dpdeps
+                else:
+                    self.cs2_array = np.zeros([len(self.pres_array)])
 
                 # keep unscaled for use in density calculation
                 self.pres_array_unscaled = eos_data.T[4]
@@ -354,14 +359,14 @@ class TOVsolver:
         """
 
         # initial pressure
-        pres_init = min(2.0, max(self.pres_array))
+        pres_init = 2.0   #min(2.0, max(self.pres_array))
         mass_init = 0.0
 
         if self.tidal is True:
             y_init = 2.0
 
         # set initial radius array
-        low_pres = max(1e-3, min(self.pres_array))
+        low_pres = 1e-3  #max(1e-3, min(self.pres_array))
         x = np.geomspace(1e-8, 2.5, 50)
         pres_space = np.geomspace(low_pres, pres_init, len(x))
 
@@ -600,7 +605,7 @@ class TOVsolver:
 def main():
 
     filePath = os.getcwd()
-    eosName = "FSUGarnetNStar_eos.txt"
+    eosName = "sorted_Sly4.dat"
     fileName = filePath + "/EOS_Data/" + eosName
 
     tov = TOVsolver(fileName, tidal=True)

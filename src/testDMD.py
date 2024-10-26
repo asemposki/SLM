@@ -23,7 +23,7 @@ TRAIN_PATH = f"{base_PATH}/trainData/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.arange(300, 500, 40)  # 370 - 385
+lamVal = np.linspace(370, 385, 10) #np.arange(300, 500, 40)  # 370 - 385
 kappaVal = np.linspace(0.1, 0.3, 10)
 Ls = np.linspace(0.0, 5e-3, 11)
 Lv = np.linspace(0.0, 5e-2, 11)
@@ -83,7 +83,7 @@ def main(parametric=False, tidal=False, mseos=False):
             EOS_PATH = MSEOS_PATH
         else:
             EOS_PATH = Quarkies_PATH
-        eval_parametric(6, EOS_PATH, tidal, mseos)
+        eval_parametric(8, EOS_PATH, tidal, mseos)   # change to 8 and run from 6 
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"
         fileName = input("Enter the EOS file name: ")
