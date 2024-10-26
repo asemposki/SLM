@@ -1,3 +1,10 @@
 .history
 *.pyc*
 __pycache__*
+*.png
+Plots/
+testData/
+TOV_data/
+EOS_files/
+Results/
+trainData/

@@ -23,7 +23,7 @@ additional_folders_to_clean = [
     "Results",  # output data directory
     "TOV_data",  # temporary data directory
     "testData",  # test data directory
-    "Plots",  # plots directory
+    #"Plots",  # plots directory
     "trainData",  # training data directory
 ]
 

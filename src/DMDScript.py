@@ -254,6 +254,8 @@ if __name__ == "__main__":
     data.update({"lam": np.array(lam, dtype=np.complex64).tolist()})
     data.update({"b": b.real.astype("float64").tolist()})
     data.update({"Xdmd": (XdmdRes.real.astype("float64")).tolist()})
+    data.update({"hftime": HFTime})
+    data.update({"dmdtime": DMDTime})
 
     serializable_data = json.dumps(
         data, default=complex_encoder, sort_keys=True, indent=4

@@ -6,6 +6,7 @@ Last edited: 23 September 2024
 import numpy as np
 import os
 import sys
+import time
 from scipy.spatial import distance
 import json
 from itertools import combinations_with_replacement
@@ -381,9 +382,10 @@ def main(tidal):
     for file in os.listdir(TOV_DATA_PATH):
         fileList.append(file)
 
-    updatedFileList = random.sample(fileList, 30)
+    random.seed(48824)
+    updatedFileList = random.sample(fileList, 100)  
     updatedFileList = sorted(updatedFileList)
-    testFileList = random.sample(fileList, 10)
+    testFileList = random.sample(fileList, 22)     # originally 10
     testFileList = sorted(testFileList)
 
     if not os.path.exists(TEST_DATA_PATH):
@@ -396,15 +398,19 @@ def main(tidal):
             os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
         # fileSplit = file.strip("DMD.dat").split("_")
 
-    training = ParametricDMD(updatedFileList, 13, tidal)
+    training = ParametricDMD(updatedFileList, 13, tidal)  # 13
     training.fit()
+
+    time_dict = {}
 
     for file in os.listdir(TEST_DATA_PATH):
         if "MR" in file:
             fileSplit = file.strip(".dat").split("_")
             print(fileSplit)
             testParam = fileSplit[2:]
+            starttime = time.time()
             phi, omega, lam, b, Xdmd, newT = training.predict(testParam)
+            stoptime = time.time()
             # plot_eigs(lam, dpi=600, filename=f"eigsplot_{file}.pdf")
             data = np.loadtxt(os.path.join(TEST_DATA_PATH, file))
             # X = np.delete(data, 0, axis=1).T
@@ -412,6 +418,16 @@ def main(tidal):
             name = "Data_" + "_".join(testParam)
             plot_parametric(Xdmd, X, name, tidal)
             print(f"plotted file: {name}")
+            total_time = stoptime - starttime
+
+            time_dict[file] = total_time
+
+    serializable_data = json.dumps(
+        time_dict, sort_keys=True, indent=4
+    )
+
+    with open(f"dmd_time_data.json", "w") as file:
+        file.write(serializable_data)
 
 
 if __name__ == "__main__":
