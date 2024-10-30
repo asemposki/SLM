@@ -1,5 +1,7 @@
 # SLM
 Repository for the Star Log-extended eMulator package.
 
-# Authors
-Sudhanva S. Lalit (FRIB/MSU), Alexandra C. Semposki (Ohio U), and Joshua M. Maldonado (Ohio U).
+## Author contact information
+- Sudhanva S. Lalit (FRIB/MSU): lalit@frib.msu.edu
+- Alexandra C. Semposki (Ohio U): as727414@ohio.edu
+- Joshua M. Maldonado (Ohio U): jm998521@ohio.edu
