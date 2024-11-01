@@ -42,15 +42,15 @@ extra_css:
 plugins:
 - search:
 - mkdocs-jupyter:
-# - mkdocstrings:
-#     default_handler: python
-#     handlers:
-#       python:
-#         setup_commands:
-#           - import sys
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        setup_commands:
+          - import sys
 #           - sys.path.append("samba")
-#         rendering:
-#           show_source: true
+      rendering:
+        show_source: true
 # watch:
 # - samba
 
