@@ -28,7 +28,7 @@ colors = [
 
 __all__ = ["plot_eigs", "plot_dmd", "plot_S"]
 
-base_PATH = os.getcwd()  # path.dirname(os.path.realpath(__file__))
+base_PATH = os.path.join(os.path.dirname(__file__), "..")
 PLOTS_PATH = f"{base_PATH}/Plots"
 
 # plt.style.use("science")

@@ -11,7 +11,8 @@ import sys
 import numpy as np
 
 
-base_PATH = os.getcwd()  # path.dirname(os.path.realpath(__file__))
+base_PATH = os.path.join(os.path.dirname(__file__), "..")
+src_PATH = f"{base_PATH}/src/"
 EOS_FILES_PATH = f"{base_PATH}/EOS_files/"
 RESULTS_PATH = f"{base_PATH}/Results"
 EOS_CODE_PATH = f"{base_PATH}/EOS_Codes/"
@@ -23,7 +24,7 @@ TRAIN_PATH = f"{base_PATH}/trainData/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(370, 385, 10) #np.arange(300, 500, 40)  # 370 - 385
+lamVal = np.linspace(370, 385, 10)  # np.arange(300, 500, 40)  # 370 - 385
 kappaVal = np.linspace(0.1, 0.3, 10)
 Ls = np.linspace(0.0, 5e-3, 11)
 Lv = np.linspace(0.0, 5e-2, 11)
@@ -55,7 +56,7 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                             f"EOS_MS_{lam:.4f}_{kappa:.3f}_{zeta:.4f}_{xi:.1f}.dat"
                         )
                         print(fileName)
-                        os.chdir(base_PATH)
+                        os.chdir(src_PATH)
                         os.system(
                             f"python DMDScript.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                         )
@@ -69,7 +70,7 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                 fileName = f"EOS_Quarkyonia_{lam:.2f}_{kappa:.2f}.dat"
                 os.system(f"python Quarkyonia.py {kappa} {lam}")
                 print(fileName)
-                os.chdir(base_PATH)
+                os.chdir(src_PATH)
                 os.system(
                     f"python DMDScript.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                 )
@@ -83,7 +84,7 @@ def main(parametric=False, tidal=False, mseos=False):
             EOS_PATH = MSEOS_PATH
         else:
             EOS_PATH = Quarkies_PATH
-        eval_parametric(8, EOS_PATH, tidal, mseos)   # change to 8 and run from 6 
+        eval_parametric(8, EOS_PATH, tidal, mseos)  # change to 8 and run from 6
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"
         fileName = input("Enter the EOS file name: ")

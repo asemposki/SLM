@@ -14,7 +14,7 @@ from sklearn.neighbors import NearestNeighbors
 import random
 from plotData import plot_parametric, plot_eigs
 
-BASE_PATH = os.getcwd()
+BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
 DMD_DATA_PATH = f"{BASE_PATH}/Results/"
 TEST_DATA_PATH = f"{BASE_PATH}/testData/"
 TOV_DATA_PATH = f"{BASE_PATH}/TOV_data/"
@@ -354,19 +354,19 @@ class ParametricDMD:
         - x: Solution vector.
         """
         # Check condition
-        # cond_num = np.linalg.cond(A)
-        # print("Condition Number:", cond_num)
+        cond_num = np.linalg.cond(A)
+        print("Condition Number:", cond_num)
 
-        # if cond_num > 1e10:
-        #     print("Matrix is ill-conditioned. Applying regularization.")
-        #     # Regularization term (identity matrix scaled by alpha)
-        #     I = np.eye(A.shape[1])
-        #     A_reg = A.T @ A + alpha * I
-        #     B_reg = A.T @ B
+        if cond_num > 1e10:
+            print("Matrix is ill-conditioned. Applying regularization.")
+            # Regularization term (identity matrix scaled by alpha)
+            I = np.eye(A.shape[1])
+            A_reg = A.T @ A + alpha * I
+            B_reg = A.T @ B
 
-        #     # Solve the modified least squares problem
-        #     x = np.linalg.solve(A_reg, B_reg)
-        #     return x
+            # Solve the modified least squares problem
+            x = np.linalg.solve(A_reg, B_reg)
+            return x
         # Regularization term (identity matrix scaled by alpha)
         I = np.eye(A.shape[1])
         A_reg = A.T @ A + alpha * I
@@ -383,9 +383,9 @@ def main(tidal):
         fileList.append(file)
 
     random.seed(48824)
-    updatedFileList = random.sample(fileList, 100)  
+    updatedFileList = random.sample(fileList, 50)
     updatedFileList = sorted(updatedFileList)
-    testFileList = random.sample(fileList, 22)     # originally 10
+    testFileList = random.sample(fileList, 22)  # originally 10
     testFileList = sorted(testFileList)
 
     if not os.path.exists(TEST_DATA_PATH):
@@ -422,9 +422,7 @@ def main(tidal):
 
             time_dict[file] = total_time
 
-    serializable_data = json.dumps(
-        time_dict, sort_keys=True, indent=4
-    )
+    serializable_data = json.dumps(time_dict, sort_keys=True, indent=4)
 
     with open(f"dmd_time_data.json", "w") as file:
         file.write(serializable_data)

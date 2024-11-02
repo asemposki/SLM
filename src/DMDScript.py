@@ -12,13 +12,13 @@ import time
 from TOV_class import TOVsolver
 from plotData import plot_eigs, plot_S, plot_dmd, plot_dmd_rad
 
-base_PATH = os.getcwd()
-EOS_DATA_PATH = f"{base_PATH}/EOS_Data/"
-EOS_Quarkies = f"{base_PATH}/EOS_files/Quarkies/"  # /Quarkies/"
-EOS_MSEOS = f"{base_PATH}/EOS_files/MSEOS/"
-dmdResPath = f"{base_PATH}/Results/"
-TOV_PATH = f"{base_PATH}/TOV_data/"
-PLOTS_PATH = f"{base_PATH}/Plots/"
+BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
+EOS_DATA_PATH = f"{BASE_PATH}/EOS_Data/"
+EOS_Quarkies = f"{BASE_PATH}/EOS_files/Quarkies/"  # /Quarkies/"
+EOS_MSEOS = f"{BASE_PATH}/EOS_files/MSEOS/"
+dmdResPath = f"{BASE_PATH}/Results/"
+TOV_PATH = f"{BASE_PATH}/TOV_data/"
+PLOTS_PATH = f"{BASE_PATH}/Plots/"
 
 p0 = 1.285e3
 
