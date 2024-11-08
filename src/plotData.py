@@ -102,109 +102,83 @@ def plot_eigs(
 ):
     """
     Plot the eigenvalues.
-    :param bool show_axes: if True, the axes will be showed in the plot.
-        Default is True.
-    :param bool show_unit_circle: if True, the circle with unitary radius
-        and center in the origin will be showed. Default is True.
-    :param tuple(int,int) figsize: tuple in inches defining the figure
-        size. Default is (8, 8).
+    :param bool show_axes: if True, the axes will be shown in the plot.
+    :param bool show_unit_circle: if True, a unit circle centered at the origin will be shown.
+    :param tuple(int,int) figsize: tuple defining the figure size in inches. Default is (8, 8).
     :param str title: title of the plot.
-    :param narrow_view bool: if True, the plot will show only the smallest
-        rectangular area which contains all the eigenvalues, with a padding
-        of 0.05. Not compatible with `show_axes=True`. Default is False.
-    :param dpi int: If not None, the given value is passed to
-        ``plt.figure``.
+    :param narrow_view bool: if True, the plot will show only the smallest rectangular area containing
+        all the eigenvalues, with a padding of 0.05. Not compatible with `show_axes=True`.
+    :param dpi int: If not None, passed to ``plt.figure``.
     :param str filename: if specified, the plot is saved at `filename`.
     """
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    ax.set_title(title)
 
-    if dpi is not None:
-        plt.figure(figsize=figsize, dpi=dpi)
-    else:
-        plt.figure(figsize=figsize)
-
-    plt.title(title)
-    plt.gcf()
-    ax = plt.gca()
-
-    points = ax.plot(eigs.real, eigs.imag, "bo", label="Eigenvalues")
+    (points,) = ax.plot(
+        eigs.real, eigs.imag, "bo", label="Eigenvalues"
+    )  # Comma unpacks to Line2D object
 
     if narrow_view:
         supx, infx, supy, infy = _plot_limits(eigs, narrow_view)
-
-        # set limits for axis
         ax.set_xlim((infx, supx))
         ax.set_ylim((infy, supy))
 
-        # x and y axes
         if show_axes:
-            endx = np.min([supx, 1.0])
+            endx = min(supx, 1.0)
             ax.annotate(
                 "",
                 xy=(endx, 0.0),
-                xytext=(np.max([infx, -1.0]), 0.0),
-                arrowprops=dict(arrowstyle=("->" if endx == 1.0 else "-")),
+                xytext=(max(infx, -1.0), 0.0),
+                arrowprops=dict(arrowstyle="->" if endx == 1.0 else "-"),
             )
-
-            endy = np.min([supy, 1.0])
+            endy = min(supy, 1.0)
             ax.annotate(
                 "",
                 xy=(0.0, endy),
-                xytext=(0.0, np.max([infy, -1.0])),
-                arrowprops=dict(arrowstyle=("->" if endy == 1.0 else "-")),
+                xytext=(0.0, max(infy, -1.0)),
+                arrowprops=dict(arrowstyle="->" if endy == 1.0 else "-"),
             )
     else:
-        # set limits for axis
         limit = _plot_limits(eigs, narrow_view)
-
         ax.set_xlim((-limit, limit))
         ax.set_ylim((-limit, limit))
 
-        # x and y axes
         if show_axes:
             ax.annotate(
                 "",
-                xy=(np.max([limit * 0.8, 1.0]), 0.0),
-                xytext=(np.min([-limit * 0.8, -1.0]), 0.0),
+                xy=(max(limit * 0.8, 1.0), 0.0),
+                xytext=(min(-limit * 0.8, -1.0), 0.0),
                 arrowprops=dict(arrowstyle="->"),
             )
             ax.annotate(
                 "",
-                xy=(0.0, np.max([limit * 0.8, 1.0])),
-                xytext=(0.0, np.min([-limit * 0.8, -1.0])),
+                xy=(0.0, max(limit * 0.8, 1.0)),
+                xytext=(0.0, min(-limit * 0.8, -1.0)),
                 arrowprops=dict(arrowstyle="->"),
             )
 
-    plt.ylabel("Imaginary part")
-    plt.xlabel("Real part")
+    ax.set_xlabel("Real part")
+    ax.set_ylabel("Imaginary part")
 
+    # Unit circle
     if show_unit_circle:
         unit_circle = plt.Circle(
             (0.0, 0.0),
             1.0,
             color="green",
             fill=False,
-            label="Unit circle",
             linestyle="--",
+            label="Unit circle",
         )
         ax.add_artist(unit_circle)
 
-    # Dashed grid
-    gridlines = ax.get_xgridlines() + ax.get_ygridlines()
-    for line in gridlines:
-        line.set_linestyle("-.")
-    ax.grid(True)
+    ax.grid(True, linestyle="-.")
 
-    # legend
+    # Legend handling
     if show_unit_circle:
-        ax.add_artist(
-            plt.legend(
-                [points, unit_circle],
-                ["Eigenvalues", "Unit circle"],
-                loc="best",
-            )
-        )
+        ax.legend([points, unit_circle], ["Eigenvalues", "Unit circle"], loc="best")
     else:
-        ax.add_artist(plt.legend([points], ["Eigenvalues"], loc="best"))
+        ax.legend([points], ["Eigenvalues"], loc="best")
 
     ax.set_aspect("equal")
 

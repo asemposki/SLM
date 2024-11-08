@@ -24,14 +24,14 @@ TRAIN_PATH = f"{base_PATH}/trainData/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(370, 385, 10)  # np.arange(300, 500, 40)  # 370 - 385
+lamVal = np.linspace(300, 500, 6)  # np.arange(300, 500, 40)  # 370 - 385
 kappaVal = np.linspace(0.1, 0.3, 10)
 Ls = np.linspace(0.0, 5e-3, 11)
 Lv = np.linspace(0.0, 5e-2, 11)
-# zetaVal = np.linspace(1e-4, 2e-4, 2)
-zetaVal = [1e-4]
-# xiVal = np.linspace(0.0, 1.0, 2)
-xiVal = [1.0]
+zetaVal = np.linspace(1e-4, 2e-4, 2)
+# zetaVal = [1e-4]
+xiVal = np.linspace(0.0, 1.0, 2)
+# xiVal = [1.0]
 
 
 def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
@@ -58,7 +58,7 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                         print(fileName)
                         os.chdir(src_PATH)
                         os.system(
-                            f"python DMDScript.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
+                            f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                         )
     else:
         if not os.path.exists(Quarkies_PATH):
@@ -72,10 +72,10 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                 print(fileName)
                 os.chdir(src_PATH)
                 os.system(
-                    f"python DMDScript.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
+                    f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                 )
 
-    os.system(f"python parametricDMD_BGRIM.py {tidal}")
+    os.system(f"python pSLM.py {tidal} {mseos}")
 
 
 def main(parametric=False, tidal=False, mseos=False):
@@ -90,9 +90,7 @@ def main(parametric=False, tidal=False, mseos=False):
         fileName = input("Enter the EOS file name: ")
         svdSize = int(input("Enter the SVD size[Int]: "))
         print(f"Running DMD for {fileName}")
-        os.system(
-            f"python DMDScript.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
-        )
+        os.system(f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}")
 
 
 if __name__ == "__main__":

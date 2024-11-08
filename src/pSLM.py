@@ -46,8 +46,9 @@ colors = [
 
 class ParametricDMD:
 
-    def __init__(self, fileList, svdSize, tidal=False) -> None:
+    def __init__(self, fileList, filePath, svdSize, tidal=False) -> None:
         self.fileList = fileList
+        self.filePath = filePath
         self.svdSize = svdSize
         self.tidal = tidal
         self.LamrVals = []
@@ -181,7 +182,7 @@ class ParametricDMD:
             print(f"fileName = {file}")
             nameList = file.strip("MR.dat").split("_")
             params.append(nameList[2:])
-            data = np.loadtxt(TOV_DATA_PATH + file).T
+            data = np.loadtxt(self.filePath + file).T
             print("Data", data.shape)
             self.t = np.arange(len(data.T[0]))
             self.dt = (self.t[-1] - self.t[0]) / len(self.t)
@@ -270,12 +271,12 @@ class ParametricDMD:
         # Write arrays to json file
         dArray = dict()
         dArray["params"] = self.params.tolist()
-        dArray["LamrVals"] = self.LamrVals.tolist()
+        # dArray["LamrVals"] = self.LamrVals.tolist()
         dArray["UrVals"] = self.UrVals.tolist()
-        dArray["WrVals"] = self.WrVals.tolist()
+        # dArray["WrVals"] = self.WrVals.tolist()
         dArray["VrVals"] = self.VrVals.tolist()
         dArray["SrVals"] = self.SrVals.tolist()
-        dArray["bVals"] = self.bVals.tolist()
+        # dArray["bVals"] = self.bVals.tolist()
         dArray["AtildeVals"] = self.AtildeVals.tolist()
         serializable_data = json.dumps(
             dArray, default=self.complex_encoder, sort_keys=True, indent=4
@@ -377,15 +378,20 @@ class ParametricDMD:
         return x
 
 
-def main(tidal):
+def main(tidal=False, mseos=False):
     fileList = []
-    for file in os.listdir(TOV_DATA_PATH):
+    if mseos:
+        tov_data_path = f"{TOV_DATA_PATH}/MSEOS/"
+    else:
+        tov_data_path = f"{TOV_DATA_PATH}/Quarkies/"
+
+    for file in os.listdir(tov_data_path):
         fileList.append(file)
 
     random.seed(48824)
-    updatedFileList = random.sample(fileList, 50)
+    updatedFileList = random.sample(fileList, 20)
     updatedFileList = sorted(updatedFileList)
-    testFileList = random.sample(fileList, 22)  # originally 10
+    testFileList = random.sample(fileList, 10)  # originally 10
     testFileList = sorted(testFileList)
 
     if not os.path.exists(TEST_DATA_PATH):
@@ -394,11 +400,10 @@ def main(tidal):
     os.system("rm * && cd ../")
     for file in testFileList:
         if file not in updatedFileList:
-            dmdFile = os.path.join(TOV_DATA_PATH, file)
+            dmdFile = os.path.join(tov_data_path, file)
             os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
-        # fileSplit = file.strip("DMD.dat").split("_")
 
-    training = ParametricDMD(updatedFileList, 13, tidal)  # 13
+    training = ParametricDMD(updatedFileList, tov_data_path, 9, tidal)  # 13
     training.fit()
 
     time_dict = {}
@@ -406,20 +411,17 @@ def main(tidal):
     for file in os.listdir(TEST_DATA_PATH):
         if "MR" in file:
             fileSplit = file.strip(".dat").split("_")
-            print(fileSplit)
             testParam = fileSplit[2:]
             starttime = time.time()
             phi, omega, lam, b, Xdmd, newT = training.predict(testParam)
             stoptime = time.time()
             # plot_eigs(lam, dpi=600, filename=f"eigsplot_{file}.pdf")
             data = np.loadtxt(os.path.join(TEST_DATA_PATH, file))
-            # X = np.delete(data, 0, axis=1).T
             X = data.T
             name = "Data_" + "_".join(testParam)
             plot_parametric(Xdmd, X, name, tidal)
             print(f"plotted file: {name}")
             total_time = stoptime - starttime
-
             time_dict[file] = total_time
 
     serializable_data = json.dumps(time_dict, sort_keys=True, indent=4)
@@ -429,6 +431,7 @@ def main(tidal):
 
 
 if __name__ == "__main__":
-    (tidal,) = sys.argv[1:]
+    (tidal, mseos) = sys.argv[1:]
     tidal = eval(tidal)
-    main(tidal)
+    mseos = eval(mseos)
+    main(tidal, mseos)

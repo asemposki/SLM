@@ -18,6 +18,8 @@ EOS_Quarkies = f"{BASE_PATH}/EOS_files/Quarkies/"  # /Quarkies/"
 EOS_MSEOS = f"{BASE_PATH}/EOS_files/MSEOS/"
 dmdResPath = f"{BASE_PATH}/Results/"
 TOV_PATH = f"{BASE_PATH}/TOV_data/"
+TOV_MSEOS = f"{BASE_PATH}/TOV_data/MSEOS/"
+TOV_Quarkies = f"{BASE_PATH}/TOV_data/Quarkies/"
 PLOTS_PATH = f"{BASE_PATH}/Plots/"
 
 p0 = 1.285e3
@@ -128,9 +130,13 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     else:
         if mseos is True:
             eos_file = EOS_MSEOS + fileName
+            TOV_PATH = TOV_MSEOS
         else:
             eos_file = EOS_Quarkies + fileName
-    # print(eos_file)
+            TOV_PATH = TOV_Quarkies
+    if not os.path.exists(TOV_PATH):
+        os.makedirs(TOV_PATH)
+
     # Replace the filename and run the code
     file = TOVsolver(eos_file, tidal=tidal)
     file.tov_routine(verbose=False, write_to_file=False)
@@ -180,7 +186,7 @@ def main(fileName, svdSize, tidal=False, parametric=False, mseos=True):
         X.append(np.log(tidal_def))
 
     X = np.asarray(X, dtype=np.float64)
-    print("X shape: ", X.shape)
+    # print("X shape: ", X.shape)
     startDMDTime = time.time()
     phi, omega, lam, b, Xdmd, S = DMD(X, svdSize, (linT[-1] - linT[0]) / len(linT))
     endDMDTime = time.time()

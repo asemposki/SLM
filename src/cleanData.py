@@ -21,7 +21,7 @@ cleanup_targets = [
 additional_folders_to_clean = [
     "EOS_files",  # log files directory
     "Results",  # output data directory
-    "TOV_data",  # temporary data directory
+    "TOV_data",  # TOV data directory
     "testData",  # test data directory
     # "Plots",  # plots directory
     "trainData",  # training data directory

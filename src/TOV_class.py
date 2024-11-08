@@ -357,14 +357,14 @@ class TOVsolver:
         """
 
         # initial pressure
-        pres_init = 2.0   #min(2.0, max(self.pres_array))
+        pres_init = min(2.0, max(self.pres_array))
         mass_init = 0.0
 
         if self.tidal is True:
             y_init = 2.0
 
         # set initial radius array
-        low_pres = 1e-3  #max(1e-3, min(self.pres_array))
+        low_pres = max(1e-3, min(self.pres_array))
         x = np.geomspace(1e-8, 2.5, 50)
         pres_space = np.geomspace(low_pres, pres_init, len(x))
 
@@ -440,16 +440,24 @@ class TOVsolver:
         corr_radius_index = np.where(max_mass == maximum_mass)[0][0]
         corr_radius = max_radius[corr_radius_index]
         corr_pres = pres_central[corr_radius_index]
+        print(
+            "Max mass: ",
+            maximum_mass,
+            "Radius: ",
+            corr_radius,
+            "Central pressure: ",
+            corr_pres,
+        )
 
         # tidal deformability
         if self.tidal is True:
             self.tidal_deformability, self.k2 = self.tidal_def(
                 self.yR, max_mass, max_radius
             )
-            print(
-                "Tidal deformability at all points: {}".format(self.tidal_deformability)
-            )
-            print("k2 at all points: {}".format(self.k2))
+            # print(
+            # "Tidal deformability at all points: {}".format(self.tidal_deformability)
+            # )
+            # print("k2 at all points: {}".format(self.k2))
 
         if verbose is True:
             print("Max mass array: ", max_mass)
