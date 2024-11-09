@@ -1,7 +1,7 @@
 # SLM
 Repository for the Star Log-extended eMulator package.
 
-<img align="right" width="200" src="SLM_Logo.png">
+<img align="right" width="300" src="SLM_Logo.png">
 
 ## Author contact information
 - Sudhanva S. Lalit (FRIB/MSU): lalit@frib.msu.edu
