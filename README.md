@@ -11,7 +11,7 @@ These emulators exhibit a computational speed-up of $\approx 10^{5}$ times that 
 
 ## Installation instructions
 
-(Stuff will go here soon.)
+(Stuff will go here soon. Testing rules.)
 
 ## Testing
 
