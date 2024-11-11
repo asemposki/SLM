@@ -1,4 +1,4 @@
-"""Script to evaluate DMDs for the TOV equations
+"""Parametric test code to test better interpoltion method using Banach GRIM
 Author: Sudhanva Lalit
 Last edited: 23 September 2024
 """
@@ -13,6 +13,8 @@ from itertools import combinations_with_replacement
 from sklearn.neighbors import NearestNeighbors
 import random
 from plotData import plot_parametric, plot_eigs
+from sklearn.preprocessing import StandardScaler
+
 
 BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
 DMD_DATA_PATH = f"{BASE_PATH}/Results/"
@@ -111,43 +113,6 @@ class ParametricDMD:
 
         return sorted_eigenvalues, sorted_eigenvectors
 
-    # Function for the Banach GRIM interpolation algorithm
-    def banach_grim_data(
-        self, x0, y, x_data, tol=1e-8, max_iter=100, extrapolate=False
-    ):
-        """
-        Perform Banach GRIM interpolation for multidimensional data.
-
-        Parameters:
-        x0 (array-like): Initial guess (2D array) for the input.
-        y (array-like): Target values (output data points).
-        x_data (array-like): Input data points corresponding to the output.
-        tol (float): Tolerance level to achieve.
-        max_iter (int): Maximum number of iterations.
-
-        Returns:
-        y_interp (float): Interpolated output value for input `x0`.
-        """
-        x = np.array(x0)
-        for i in range(max_iter):
-            # Find the nearest neighbors in the dataset based on distance
-            distances = distance.cdist([x], x_data, metric="euclidean")
-            nearest_idx = np.argmin(distances)
-
-            # Interpolation step: adjust based on the closest point
-            y_closest = y[nearest_idx]
-            x_new = x_data[nearest_idx]
-
-            if np.linalg.norm(x_new - x) < tol:
-                print(f"Converged after {i+1} iterations.")
-                return y_closest
-
-            # Update the point to the closest one for the next iteration
-            x = x_new
-
-        print("Did not converge within the maximum number of iterations.")
-        return y_closest
-
     def augment_data_multiple_columns(self, X):
         """
         Augment the data matrix X with nonlinear terms for multiple variables.
@@ -173,12 +138,59 @@ class ParametricDMD:
 
         return augmented_X
 
+    # Greedy Recombination Interpolation Function
+    def greedy_recombination_interpolation(
+        self, target_x, x, y, scaler_y, num_iterations=100, epsilon=1e-4
+    ):
+        """
+        Perform Greedy Recombination Interpolation for Banach spaces.
+
+        Parameters:
+        - target_x: The target parameter set for interpolation.
+        - x: The input parameters.
+        - y: The corresponding y values.
+        - num_iterations: Number of iterations for the greedy recombination process.
+        - epsilon: Convergence criterion (threshold for residuals).
+
+        Returns:
+        - Interpolated y value at target_x.
+        """
+        # Normalize the target_x
+        target_x_normalized = self.scaler_x.transform([target_x])
+
+        # Initialize residuals and approximation
+        residuals = np.zeros_like(y[0])  # Start with zero approximation
+        approximation = np.zeros_like(y[0])  # Initialize with zero approximation
+
+        for iteration in range(num_iterations):
+            # Compute the error (residual) for each basis function (row in x)
+            errors = np.linalg.norm(
+                x - target_x_normalized, axis=1
+            )  # Calculate distance between x and target_x
+            best_idx = np.argmin(errors)  # Select the index with the smallest residual
+
+            # Choose the corresponding y value that minimizes the residual
+            selected_value = y[best_idx]
+
+            # Update the approximation and residuals
+            approximation += selected_value
+            residuals = y[best_idx] - approximation
+
+            # Check for convergence: if residual is smaller than epsilon
+            if np.linalg.norm(residuals) < epsilon:
+                break
+
+        # Reverse normalization for the output
+        approximation = scaler_y.inverse_transform([approximation])[0]
+
+        return approximation
+
     # Numpy based Reduced eigen-pair interpolation
     def fit(self):
         params = []
 
         # Read data from the dmd files in dmdRes
-        for file in self.fileList:
+        for i, file in enumerate(self.fileList):
             print(f"fileName = {file}")
             nameList = file.strip("MR.dat").split("_")
             params.append(nameList[2:])
@@ -192,44 +204,40 @@ class ParametricDMD:
             if self.tidal:
                 X.append(np.log(data[3]))
             X = np.array(X, dtype=np.float64)
+            if i == 0:
+                print("X", X)
+            self.mm1 = X.shape[1]
 
             self.n = len(X)
             X = self.augment_data_multiple_columns(X)
             X1 = np.delete(X, -1, axis=1)
             X2 = np.delete(X, 0, axis=1)
-            self.mm1 = X1.shape[1] + 1
+            print(X.shape, self.mm1)
 
             # Compute SVD of X1
             U, S, Vt = np.linalg.svd(X1, full_matrices=False)
-            # sorted_indices = np.argsort(-S)
-            # S = S[sorted_indices]
-            # U = U[:, sorted_indices]
-            # Vt = Vt[sorted_indices, :]
-            if (np.inf in U) or (np.inf in S) or (np.inf in Vt):
-                print("!! ! !!")
-            if (np.nan in U) or (np.nan in S) or (np.nan in Vt):
-                print("! !!! !")
+            sorted_indices = np.argsort(-S)
+            S = S[sorted_indices]
+            U = U[:, sorted_indices]
+            Vt = Vt[sorted_indices, :]
 
             # Truncate to rank r
             self.r = min(self.svdSize, U.shape[1])
             U_r = U[:, : self.r]
             S_r = np.diag(S[: self.r])
             V_r = Vt[: self.r, :]
+            print("Sr", V_r.shape)
 
             # Compute Atilde
             Atilde = U_r.T @ X2 @ V_r.T @ np.linalg.inv(S_r)
 
-            if np.inf in Atilde:
-                print("\n" * 5)
-                print("inf issue !!!")
-            if np.nan in Atilde:
-                print("\n" * 5)
-                print("nan issue !!!")
-
             # Compute eigenvectors and eigenvalues
-            # D, W_r = np.linalg.eig(Atilde)
-            D, W_r = self.consistent_eigen(Atilde)
-            # print("D", W_r)
+            D, W_r = np.linalg.eig(Atilde)
+            # D, W_r = self.consistent_eigen(Atilde)
+            omega = np.log(D) / self.dt
+            if i == 0:
+                print("D", D)
+                print("omega", omega)
 
             Phi = X2 @ V_r.T @ np.linalg.inv(S_r) @ W_r  # DMD modes
             # Phi = U_r @ W_r
@@ -237,9 +245,10 @@ class ParametricDMD:
             # Compute DMD mode amplitudes b
             x1 = X1[:, 0]
             # print("Shapes", Phi, "\n", x1)
-            # b = np.linalg.lstsq(Phi, x1, rcond=None)[0]
-            b = self.regularized_lstsq(Phi, x1, alpha=1e-8)
-            print("b", b)
+            b = np.linalg.lstsq(Phi, x1, rcond=None)[0]
+            # b = self.regularized_lstsq(Phi, x1, alpha=1e-6)
+            if i == 0:
+                print("b", b)
             # b, residuals, rank, s = lstsq(Phi, x1)
 
             self.LamrVals.append(D)
@@ -259,6 +268,10 @@ class ParametricDMD:
         self.bVals = np.array(self.bVals)
         self.AtildeVals = np.array(self.AtildeVals)
 
+        # Ensure params and values have compatible shapes
+        if self.params.ndim == 1:
+            self.params = self.params.reshape(-1, 1)
+
         # Reshape arrays for RBF process
         xShape = self.params.shape[0]
         self.UrValsReshape = self.UrVals.reshape(xShape, -1)
@@ -269,23 +282,40 @@ class ParametricDMD:
         self.bVals_cplx = self.bVals.imag.reshape(xShape, -1)
         self.AtildeVals = self.AtildeVals.reshape(xShape, -1)
 
-        # Write arrays to json file
-        dArray = dict()
-        dArray["params"] = self.params.tolist()
-        # dArray["LamrVals"] = self.LamrVals.tolist()
-        dArray["UrVals"] = self.UrValsReshape.tolist()
-        # dArray["WrVals"] = self.WrVals.tolist()
-        dArray["VrVals"] = self.VrVals.tolist()
-        dArray["SrVals"] = self.SrVals.tolist()
-        # dArray["bVals"] = self.bVals.tolist()
-        dArray["AtildeVals"] = self.AtildeVals.tolist()
-        serializable_data = json.dumps(
-            dArray, default=self.complex_encoder, sort_keys=True, indent=4
+        # Normalize data (this helps avoid issues with different scales)
+        self.scaler_x = StandardScaler()
+        self.params_normalized = self.scaler_x.fit_transform(self.params)
+
+        self.scaler_LamrVals_real = StandardScaler()
+        self.LamrVals_real_normalized = self.scaler_LamrVals_real.fit_transform(
+            self.LamrVals.real
         )
-        if not os.path.exists(TRAIN_PATH):
-            os.makedirs(TRAIN_PATH)
-        with open(f"{TRAIN_PATH}/dmdData.json", "w") as f:
-            f.write(serializable_data)
+        self.scaler_LamrVals_imag = StandardScaler()
+        self.LamrVals_imag_normalized = self.scaler_LamrVals_imag.fit_transform(
+            self.LamrVals.imag
+        )
+        self.scaler_UrVals = StandardScaler()
+        self.UrVals_normalized = self.scaler_UrVals.fit_transform(self.UrValsReshape)
+        self.scaler_WrVals_real = StandardScaler()
+        self.WrVals_real_normalized = self.scaler_WrVals_real.fit_transform(
+            self.WrValsReshape.real
+        )
+        self.scaler_WrVals_imag = StandardScaler()
+        self.WrVals_imag_normalized = self.scaler_WrVals_imag.fit_transform(
+            self.WrValsReshape.imag
+        )
+        self.scaler_bVals_real = StandardScaler()
+        self.bVals_real_normalized = self.scaler_bVals_real.fit_transform(
+            self.bVals_real
+        )
+        self.scaler_bVals_cplx = StandardScaler()
+        self.bVals_cplx_normalized = self.scaler_bVals_cplx.fit_transform(
+            self.bVals_cplx
+        )
+        self.scaler_AtildeVals = StandardScaler()
+        self.AtildeVals_normalized = self.scaler_AtildeVals.fit_transform(
+            self.AtildeVals
+        )
 
     def predict(self, theta):
         # Compute phi
@@ -293,19 +323,58 @@ class ParametricDMD:
         print("theta:", theta, theta.shape)
 
         # Interpolate lambda
-        lambda_real = self.banach_grim_data(theta, self.LamrVals.real, self.params)
-        lambda_imag = self.banach_grim_data(theta, self.LamrVals.imag, self.params)
+        lambda_real = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.LamrVals_real_normalized,
+            self.scaler_LamrVals_real,
+        )
+        lambda_imag = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.LamrVals_imag_normalized,
+            self.scaler_LamrVals_imag,
+        )
         lambda_vals = lambda_real + 1j * lambda_imag
         print("lambda:", lambda_vals)
 
         # Interpolate Ur and Wr
-        U_r = self.banach_grim_data(theta, self.UrValsReshape, self.params)
-        W_r = self.banach_grim_data(theta, self.WrValsReshape, self.params)
+        U_r = self.greedy_recombination_interpolation(
+            theta, self.params_normalized, self.UrVals_normalized, self.scaler_UrVals
+        )
+        W_r_real = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.WrVals_real_normalized,
+            self.scaler_WrVals_real,
+        )
+        W_r_imag = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.WrVals_imag_normalized,
+            self.scaler_WrVals_imag,
+        )
+        W_r = W_r_real + 1j * W_r_imag
 
         # Interpolate Atilde, b
-        Atilde = self.banach_grim_data(theta, self.AtildeVals, self.params)
-        b_real = self.banach_grim_data(theta, self.bVals_real, self.params)
-        b_cplx = self.banach_grim_data(theta, self.bVals_cplx, self.params)
+        Atilde = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.AtildeVals_normalized,
+            self.scaler_AtildeVals,
+        )
+        b_real = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.bVals_real_normalized,
+            self.scaler_bVals_real,
+        )
+        b_cplx = self.greedy_recombination_interpolation(
+            theta,
+            self.params_normalized,
+            self.bVals_cplx_normalized,
+            self.scaler_bVals_cplx,
+        )
 
         WrShape = int(np.sqrt((W_r.shape[0])))
         W_r = W_r.reshape((WrShape, WrShape))
@@ -316,7 +385,7 @@ class ParametricDMD:
         # # Compute eigenvectors and eigenvalues
         Atilde = Atilde.reshape((WrShape, WrShape))
         # # D, W_r = np.linalg.eig(Atilde)
-        D, W_r = self.consistent_eigen(Atilde)
+        # D, W_r = self.consistent_eigen(Atilde)
         # print(W_r_new - W_r)
 
         Phi = U_r @ W_r
@@ -356,20 +425,6 @@ class ParametricDMD:
         Returns:
         - x: Solution vector.
         """
-        # Check condition
-        cond_num = np.linalg.cond(A)
-        print("Condition Number:", cond_num)
-
-        if cond_num > 1e10:
-            print("Matrix is ill-conditioned. Applying regularization.")
-            # Regularization term (identity matrix scaled by alpha)
-            I = np.eye(A.shape[1])
-            A_reg = A.T @ A + alpha * I
-            B_reg = A.T @ B
-
-            # Solve the modified least squares problem
-            x = np.linalg.solve(A_reg, B_reg)
-            return x
         # Regularization term (identity matrix scaled by alpha)
         I = np.eye(A.shape[1])
         A_reg = A.T @ A + alpha * I
@@ -391,7 +446,7 @@ def main(tidal=False, mseos=False):
         fileList.append(file)
 
     random.seed(48824)
-    updatedFileList = random.sample(fileList, 10)
+    updatedFileList = random.sample(fileList, 20)
     updatedFileList = sorted(updatedFileList)
     testFileList = random.sample(fileList, 5)  # originally 10
     testFileList = sorted(testFileList)

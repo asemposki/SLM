@@ -17,6 +17,8 @@ EOS_DATA_PATH = f"{BASE_PATH}/EOS_Data/"
 EOS_Quarkies = f"{BASE_PATH}/EOS_files/Quarkies/"  # /Quarkies/"
 EOS_MSEOS = f"{BASE_PATH}/EOS_files/MSEOS/"
 dmdResPath = f"{BASE_PATH}/Results/"
+DMD_RES_MSEOS = f"{BASE_PATH}/Results/MSEOS/"
+DMD_RES_Quarkies = f"{BASE_PATH}/Results/Quarkies/"
 TOV_PATH = f"{BASE_PATH}/TOV_data/"
 TOV_MSEOS = f"{BASE_PATH}/TOV_data/MSEOS/"
 TOV_Quarkies = f"{BASE_PATH}/TOV_data/Quarkies/"
@@ -69,7 +71,7 @@ def DMD(X, r, dt):
     X = augment_data_multiple_columns(X)
     X1 = np.delete(X, -1, axis=1)
     X2 = np.delete(X, 0, axis=1)
-    # print(X.shape, n)
+    print(X.shape, n)
 
     # Compute SVD of X1
     U, S, Vt = np.linalg.svd(X1, full_matrices=False)
@@ -142,9 +144,9 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     file.tov_routine(verbose=False, write_to_file=False)
     print("R of 1.4 solar mass star: ", file.canonical_NS_radius())
     dataArray = [
-        file.total_radius.flatten()[::-1],
-        file.total_pres_central.flatten()[::-1],
-        file.total_mass.flatten()[::-1],
+        file.total_radius.flatten(),
+        file.total_pres_central.flatten(),
+        file.total_mass.flatten(),
     ]
     if tidal is True:
         dataArray.append(file.k2.flatten())
@@ -163,7 +165,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
         file = "MR_" + "_".join(nameList[1:])
     else:
         file = "_".join(["MR", nameList[0], "TOV"])
-    np.savetxt(TOV_PATH + file, dataArray.T)
+    np.savetxt(TOV_PATH + file, dataArray.T, fmt="%1.8e")
     return dataArray
 
 
@@ -173,20 +175,20 @@ def main(fileName, svdSize, tidal=False, parametric=False, mseos=True):
         radius, pcentral, mass, tidal_def = solve_tov(
             fileName, tidal, parametric, mseos
         )
-        # tidal_def = tidal_def[::-1]
     else:
         radius, pcentral, mass = solve_tov(fileName, tidal, parametric, mseos)
     endHFTime = time.time()
-    p = pcentral[::-1]
-    r = radius[::-1]
-    m = mass[::-1]
+    p = pcentral
+    r = radius
+    m = mass
+    # print(mass)
     linT = np.arange(len(p))
     X = [np.log(r), np.log(p), np.log(m)]
     if tidal is True:
         X.append(np.log(tidal_def))
 
     X = np.asarray(X, dtype=np.float64)
-    # print("X shape: ", X.shape)
+    # print("X shape: ", X)
     startDMDTime = time.time()
     phi, omega, lam, b, Xdmd, S = DMD(X, svdSize, (linT[-1] - linT[0]) / len(linT))
     endDMDTime = time.time()
@@ -245,7 +247,16 @@ if __name__ == "__main__":
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
     )
-    os.chdir(dmdResPath)
+    if mseos is True and parametric is True:
+        if os.path.exists(DMD_RES_MSEOS) is False:
+            os.makedirs(DMD_RES_MSEOS)
+        os.chdir(DMD_RES_MSEOS)
+    elif mseos is False and parametric is True:
+        if os.path.exists(DMD_RES_Quarkies) is False:
+            os.makedirs(DMD_RES_Quarkies)
+        os.chdir(DMD_RES_Quarkies)
+    else:
+        os.chdir(dmdResPath)
     XdmdRes = []
     for i in range(len(Xdmd) - 1):
         XdmdRes.append(np.exp(Xdmd[i].real)[::-1])
