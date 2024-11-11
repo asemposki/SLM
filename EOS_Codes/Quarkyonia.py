@@ -34,8 +34,8 @@ def eps(k, m):
 
 def main(kap, lamInput):
     lam = lamInput / hc
-    kfmin = 0.025
-    kfmax = 6.0
+    kfmin = 0.25
+    kfmax = 5.0
     kArray = np.linspace(kfmin, kfmax, 100)
     # Initialize arrays
     epst = np.zeros(len(kArray))
@@ -93,6 +93,9 @@ def main(kap, lamInput):
         # print(f"nb: {nb}, nn/nb: {nn/nb}, nq/nb: {nq/nb}, nu: {nu}, nd: {nd}")
 
     interpErho = CubicSpline(nbq, epst)
+    indices = np.where(nbq > 0.08)
+    nbq = nbq[indices]
+    epst = epst[indices]
 
     press = -epst + interpErho(nbq, 1) * nbq
     interpPrho = CubicSpline(nbq, press)
@@ -110,10 +113,10 @@ def main(kap, lamInput):
     cs2Low = pLowDer(nbLow) / eLowDer(nbLow)
 
     # Combine the two parts
-    # nbq = np.concatenate((nbLow, nbq))
-    # epst = np.concatenate((eLow, epst))
-    # press = np.concatenate((pLow, press))
-    # cs2 = np.concatenate((cs2Low, cs2))
+    nbq = np.concatenate((nbLow, nbq))
+    epst = np.concatenate((eLow, epst))
+    press = np.concatenate((pLow, press))
+    cs2 = np.concatenate((cs2Low, cs2))
 
     nameList = "nb (fm^-1)   E (MeV)     P (MeV/fm^3)    cs2"
     fileName = f"EOS_Quarkyonia_{lamInput:.2f}_{kap:.2f}.dat"
