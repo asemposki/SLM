@@ -15,6 +15,8 @@ base_PATH = os.path.join(os.path.dirname(__file__), "..")
 src_PATH = f"{base_PATH}/src/"
 EOS_FILES_PATH = f"{base_PATH}/EOS_files/"
 RESULTS_PATH = f"{base_PATH}/Results"
+RESULTS_MSEOS_PATH = f"{RESULTS_PATH}/MSEOS/"
+RESULTS_QUARKIES_PATH = f"{RESULTS_PATH}/Quarkies/"
 EOS_CODE_PATH = f"{base_PATH}/EOS_Codes/"
 MR_PATH = f"{base_PATH}/TOV_data"
 Quarkies_PATH = f"{base_PATH}/EOS_files/Quarkies/"
@@ -102,8 +104,6 @@ if __name__ == "__main__":
     if cleanup is True:
         os.system("python cleanData.py")
     # Check if folders exist
-    if not os.path.exists(RESULTS_PATH):
-        os.makedirs(RESULTS_PATH)
     if not os.path.exists(EOS_FILES_PATH):
         os.makedirs(EOS_FILES_PATH)
     if not os.path.exists(MR_PATH):
@@ -120,6 +120,14 @@ if __name__ == "__main__":
         mseos = input("MSEOS or Quarkies? (True/False)[True]: ") or True
         if isinstance(mseos, str):
             mseos = eval(mseos)
+        if mseos is True:
+            if not os.path.exists(RESULTS_MSEOS_PATH):
+                os.makedirs(RESULTS_MSEOS_PATH)
+        else:
+            if not os.path.exists(RESULTS_QUARKIES_PATH):
+                os.makedirs(RESULTS_QUARKIES_PATH)
         main(parametric, tidal, mseos)
     else:
+        if not os.path.exists(RESULTS_PATH):
+            os.makedirs(RESULTS_PATH)
         main(parametric, tidal)
