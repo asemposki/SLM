@@ -443,7 +443,7 @@ def main(tidal=False, mseos=False):
     print(len(updatedFileList))
     updatedFileList = updatedFileList[::4]
     # updatedFileList = random.sample(fileList, 20)
-    testFileList = [file for file in fileList[::5] if file not in updatedFileList]
+    testFileList = [file for file in fileList[::4] if file not in updatedFileList]
     print(len(testFileList))
     testFileList = testFileList[::4]
     # testFileList = random.sample(fileList, 10)  # originally 10
@@ -457,8 +457,8 @@ def main(tidal=False, mseos=False):
         if file not in updatedFileList:
             dmdFile = os.path.join(tov_data_path, file)
             os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
-
-    training = ParametricDMD(updatedFileList, tov_data_path, 10, tidal)  # 13
+    
+    training = ParametricDMD(updatedFileList, tov_data_path, 6, tidal)  # 13
     training.fit()
 
     time_dict = {}

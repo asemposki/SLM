@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 import numpy as np
-
+import time
 
 base_PATH = os.path.join(os.path.dirname(__file__), "..")
 src_PATH = f"{base_PATH}/src/"
@@ -65,19 +65,28 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
     else:
         if not os.path.exists(Quarkies_PATH):
             os.makedirs(Quarkies_PATH)
+        
+        i = 1
         for lam in lamVal:
             for kappa in kappaVal:
+                print(f"\nrun {i} of {len(lamVal)*len(kappaVal)}")
                 # Make Quarkies
                 os.chdir(EOS_CODE_PATH)
                 fileName = f"EOS_Quarkyonia_{lam:.2f}_{kappa:.2f}.dat"
                 os.system(f"python Quarkyonia.py {kappa} {lam}")
                 print(fileName)
                 os.chdir(src_PATH)
+                time_initial = time.time()
                 os.system(
                     f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                 )
+                time_final = time.time()
+                
+                runtime = time_final - time_initial
+                print(f"Approximate time remaining: {runtime * (len(lamVal)*len(kappaVal) - i) / 60:.4} minutes.\n\n")
+                i += 1
 
-    os.system(f"python pSLM.py {tidal} {mseos}")
+    os.system(f"python parametricSLM.py {tidal} {mseos}")
 
 
 def main(parametric=False, tidal=False, mseos=False):
@@ -87,7 +96,7 @@ def main(parametric=False, tidal=False, mseos=False):
             svdSize = 14
         else:
             EOS_PATH = Quarkies_PATH
-            svdSize = 10
+            svdSize = 6
         eval_parametric(svdSize, EOS_PATH, tidal, mseos)  # change to 8 and run from 6
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"
