@@ -448,6 +448,13 @@ def main(tidal=False, mseos=False):
     testFileList = testFileList[::4]
     # testFileList = random.sample(fileList, 10)  # originally 10
     # testFileList = sorted(testFileList)
+    
+    print("\n\n")
+    print("training set:")
+    print(updatedFileList)
+    print("validation set:")
+    print(testFileList)
+    print("\n\n")
 
     if not os.path.exists(TEST_DATA_PATH):
         os.makedirs(TEST_DATA_PATH)
