@@ -15,7 +15,15 @@ These emulators exhibit a computational speed-up of $\approx 10^{5}$ times that 
 
 ## Testing
 
-(Stuff will go here soon.)
+To use the testing suite in this repository, simply run the command
+```shell
+python3 -m pytest test_suite.py
+```
+to run all of the tests at once. To run an individual test, use the command
+```shell
+python3 pytest <testing file name>
+```
+inside of the `tests` folder.
 
 ## Citing this package
 
