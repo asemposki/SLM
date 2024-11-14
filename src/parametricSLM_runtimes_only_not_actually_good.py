@@ -15,6 +15,8 @@ import random
 from plotData import plot_parametric, plot_eigs
 from sklearn.preprocessing import StandardScaler
 
+import time
+
 
 BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
 DMD_DATA_PATH = f"{BASE_PATH}/Results/"
@@ -470,26 +472,40 @@ def main(tidal=False, mseos=False):
 
     time_dict = {}
 
+    print("\n" * 7)
+    time_array = []
     for file in os.listdir(TEST_DATA_PATH):
+        print("!!")
         if "MR" in file:
             fileSplit = file.strip(".dat").split("_")
             testParam = fileSplit[2:]
             starttime = time.time()
             phi, omega, lam, b, Xdmd, newT = training.predict(testParam)
             stoptime = time.time()
-            # plot_eigs(lam, dpi=600, filename=f"eigsplot_{file}.pdf")
-            data = np.loadtxt(os.path.join(TEST_DATA_PATH, file))
-            X = data.T
-            name = "Data_" + "_".join(testParam)
+            
+            runtime = stoptime - starttime
+            # print(runtime)
+            time_array.append(runtime)
+            # print(time_array)
+            
+            # # plot_eigs(lam, dpi=600, filename=f"eigsplot_{file}.pdf")
+            # data = np.loadtxt(os.path.join(TEST_DATA_PATH, file))
+            # X = data.T
+            # name = "Data_" + "_".join(testParam)
             # plot_parametric(Xdmd, X, name, tidal)
             # print(f"plotted file: {name}")
-            total_time = stoptime - starttime
-            time_dict[file] = total_time
+            # total_time = stoptime - starttime
+            # time_dict[file] = total_time
+    # print("!!!")
+    # print(time_array)
+    print("")
+    print(f"{np.median(time_array):.4e}")
+    
 
-    serializable_data = json.dumps(time_dict, sort_keys=True, indent=4)
+    # serializable_data = json.dumps(time_dict, sort_keys=True, indent=4)
 
-    with open(f"slm_time_data.json", "w") as file:
-        file.write(serializable_data)
+    # with open(f"slm_time_data.json", "w") as file:
+    #     file.write(serializable_data)
 
 
 if __name__ == "__main__":
