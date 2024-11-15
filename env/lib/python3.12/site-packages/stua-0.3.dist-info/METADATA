@@ -1,0 +1,30 @@
+Metadata-Version: 2.1
+Name: stua
+Version: 0.3
+Summary: Collection of generic python functions and classes.
+Author-email: Raffaele Salmaso <raffaele.salmaso@gmail.com>
+License: MIT
+Project-URL: Home Page, https://pypi.org/project/python-stua/
+Project-URL: Documentation, https://github.com/rsalmaso/python-stua/blob/main/README.md
+Project-URL: GitHub, https://github.com/rsalmaso/python-stua
+Project-URL: Changelog, https://github.com/rsalmaso/python-stua/blob/main/CHANGELOG.md
+Project-URL: Bug Reports, https://github.com/rsalmaso/python-stua/discussions
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Topic :: Utilities
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: COPYING
+License-File: AUTHORS
+
+A collection of generic python functions and classes,
+with no specific focus.

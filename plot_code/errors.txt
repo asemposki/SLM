@@ -1,0 +1,45 @@
+
+i = 0  Lambda = 300.00, kappa = 0.21
+ HF results --	 mass = 2.9282  		radius = 14.696   		tidal = 0.17111
+SLM results --	 mass = 2.9137 		radius = 14.591  		tidal = 0.17042
+    % error --	 mass = 0.5%  		radius = 0.72%    		tidal = 0.042714%		<-
+
+i = 1  Lambda = 321.05, kappa = 0.21
+ HF results --	 mass = 2.7948  		radius = 13.705   		tidal = 0.16117
+SLM results --	 mass = 2.8236 		radius = 13.584  		tidal = 0.16179
+    % error --	 mass = 1.03%  		radius = 0.88%    		tidal = 0.023126%		<-
+
+i = 2  Lambda = 342.11, kappa = 0.21
+ HF results --	 mass = 2.6747  		radius = 12.86   		tidal = 0.15217
+SLM results --	 mass = 2.6969 		radius = 12.814  		tidal = 0.15245
+    % error --	 mass = 0.83%  		radius = 0.36%    		tidal = 0.021335%		<-
+
+i = 3  Lambda = 373.68, kappa = 0.10
+ HF results --	 mass = 2.5658  		radius = 11.909   		tidal = 0.1404
+SLM results --	 mass = 2.5851 		radius = 11.932  		tidal = 0.13955
+    % error --	 mass = 0.75%  		radius = 0.2%    		tidal = 0.024623%		<-
+
+i = 4  Lambda = 394.74, kappa = 0.10
+ HF results --	 mass = 2.4712  		radius = 11.333   		tidal = 0.13498
+SLM results --	 mass = 2.4834 		radius = 11.313  		tidal = 0.13432
+    % error --	 mass = 0.5%  		radius = 0.17%    		tidal = 0.014819%		<-
+
+i = 5  Lambda = 415.79, kappa = 0.10
+ HF results --	 mass = 2.3955  		radius = 10.971   		tidal = 0.13141
+SLM results --	 mass = 2.4172 		radius = 10.8  		tidal = 0.13179
+    % error --	 mass = 0.91%  		radius = 1.56%    		tidal = 0.01327%		<-
+
+i = 6  Lambda = 436.84, kappa = 0.21
+ HF results --	 mass = 2.3213  		radius = 10.582   		tidal = 0.13093
+SLM results --	 mass = 2.3215 		radius = 10.58  		tidal = 0.13087
+    % error --	 mass = 0.01%  		radius = 0.02%    		tidal = 0.0095091%		<-
+
+i = 7  Lambda = 457.89, kappa = 0.21
+ HF results --	 mass = 2.2795  		radius = 10.368   		tidal = 0.13085
+SLM results --	 mass = 2.2789 		radius = 10.084  		tidal = 0.13073
+    % error --	 mass = 0.03%  		radius = 2.74%    		tidal = 0.012495%		<-
+
+i = 8  Lambda = 478.95, kappa = 0.21
+ HF results --	 mass = 2.2483  		radius = 10.327   		tidal = 0.13094
+SLM results --	 mass = 2.2412 		radius = 10.198  		tidal = 0.13084
+    % error --	 mass = 0.31%  		radius = 1.25%    		tidal = 0.0098307%		<-
