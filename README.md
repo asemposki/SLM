@@ -1,4 +1,4 @@
-# SLM
+# Star Log-extended eMulation: SLM
 
 <img align="right" width="250" src="SLM_Logo.png">
 
