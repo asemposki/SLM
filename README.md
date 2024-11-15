@@ -11,7 +11,17 @@ These emulators exhibit a computational speed-up of $\approx 10^{4}$ times that 
 
 ## Installation instructions
 
-(Stuff will go here soon. Testing rules.)
+To install the most recent stable version of this package, run the command
+```shell
+pip install SLM
+```
+
+To install this package in developer mode, run the following:
+```shell
+git clone https://github.com/asemposki/SLM.git
+cd SLM
+pip install -e .
+```
 
 ## Testing
 
@@ -27,7 +37,17 @@ inside of the `tests` folder.
 
 ## Citing this package
 
-(arXiv citation will go here once submitted.)
+```bibtex
+@article{Lalit:2024xxx,
+    author = "Lalit, Sudhanva and Semposki, Alexandra C. and Maldonado, Joshua M.",
+    title = "{Star Log-extended eMulation: a method for efficient computation of the Tolman-Oppenheimer-Volkoff equations}",
+    eprint = "2411.xxxxx",
+    archivePrefix = "arXiv",
+    primaryClass = "astro-ph",
+    month = "11",
+    year = "2024"
+}
+```
 
 ## Author contact information
 - Sudhanva S. Lalit (FRIB/MSU): lalit@frib.msu.edu
