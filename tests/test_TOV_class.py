@@ -6,22 +6,18 @@
 
 import os
 import numpy as np
-import time
-
 import sys
 sys.path.append('../src')
 
-from TOV_class import TOVSolver
-
-from scipy.interpolate import interp1d
+from TOV_class import TOVsolver
 
 # test the TOVSolver class in 3 stages
-filePath = os.getcwd().strip('src/')
+filePath = os.getcwd().strip('test')
 eosName = "sorted_Sly4.dat"
 fileName = filePath + "/EOS_Data/" + eosName
 
 # 1: TOV solver for r, p, m, and Lambda
-tov = TOVSolver(fileName, tidal=True)
+tov = TOVsolver(fileName, tidal=True)
 total_radius, total_pres_central, total_mass = \
     tov.tov_routine(verbose=False, write_to_file=False)
 
@@ -42,7 +38,6 @@ def test_file():
 
 # tests of the SLy4 results
 def test_init():
-    assert tov.eos_data is not None, "file not being parsed"
     assert tov.eps_array is not None, "file not read correctly"
     assert tov.pres_array is not None, "file not read correctly"
     assert tov.nB_array is not None, "file not read correctly"
