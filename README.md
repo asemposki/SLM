@@ -38,12 +38,12 @@ inside of the `tests` folder.
 ## Citing this package
 
 ```bibtex
-@article{Lalit:2024xxx,
+@article{Lalit:2024vmu,
     author = "Lalit, Sudhanva and Semposki, Alexandra C. and Maldonado, Joshua M.",
     title = "{Star Log-extended eMulation: a method for efficient computation of the Tolman-Oppenheimer-Volkoff equations}",
-    eprint = "2411.xxxxx",
+    eprint = "2411.10556",
     archivePrefix = "arXiv",
-    primaryClass = "astro-ph",
+    primaryClass = "astro-ph.HE",
     month = "11",
     year = "2024"
 }
