@@ -1,31 +1,34 @@
-"""
-Script to test parametric or general DMD code
-Author: Sudhanva Lalit
-Started: 09/14/2024
-Latest Update: 10/22/2024
-"""
+###########################################
+# Test script for parametric or general DMD
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+###########################################
 
 import os
 import subprocess
 import sys
 import numpy as np
+from src.cleanData import clean_directory
 
-
-base_PATH = os.path.join(os.path.dirname(__file__), "..")
-src_PATH = f"{base_PATH}/src/"
-EOS_FILES_PATH = f"{base_PATH}/EOS_files/"
-RESULTS_PATH = f"{base_PATH}/Results"
-EOS_CODE_PATH = f"{base_PATH}/EOS_Codes/"
-MR_PATH = f"{base_PATH}/TOV_data"
-Quarkies_PATH = f"{base_PATH}/EOS_files/Quarkies/"
-MSEOS_PATH = f"{base_PATH}/EOS_files/MSEOS/"
-PLOTS_PATH = f"{base_PATH}/Plots/"
-TRAIN_PATH = f"{base_PATH}/trainData/"
-
+# Ensure that the parent directory (project root) is in sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from src import (
+    SRC_DIR,
+    EOS_CODES_DIR,
+    EOS_DATA_DIR,
+    EOS_FILES_DIR,
+    RESULTS_PATH,
+    TOV_PATH,
+    PLOTS_PATH,
+    MSEOS_PATH,
+    QEOS_PATH,
+)
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 20)  # np.arange(300, 500, 40)  # 370 - 385
-kappaVal = np.linspace(0.1, 0.3, 10)
+lamVal = np.linspace(300, 500, 5)  # np.arange(300, 500, 40)  # 370 - 385
+kappaVal = np.linspace(0.1, 0.3, 5)
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)
@@ -45,7 +48,7 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                 for zeta in zetaVal:
                     for xi in xiVal:
                         # Make MS EOS
-                        os.chdir(EOS_CODE_PATH)
+                        os.chdir(EOS_CODES_DIR)
                         fileName = (
                             f"EOS_MS_{lam:.4f}_{kappa:.3f}_{zeta:.4f}_{xi:.1f}.dat"
                         )
@@ -56,21 +59,21 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                             f"EOS_MS_{lam:.4f}_{kappa:.3f}_{zeta:.4f}_{xi:.1f}.dat"
                         )
                         print(fileName)
-                        os.chdir(src_PATH)
+                        os.chdir(SRC_DIR)
                         os.system(
                             f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                         )
     else:
-        if not os.path.exists(Quarkies_PATH):
-            os.makedirs(Quarkies_PATH)
+        if not os.path.exists(QEOS_PATH):
+            os.makedirs(QEOS_PATH)
         for lam in lamVal:
             for kappa in kappaVal:
                 # Make Quarkies
-                os.chdir(EOS_CODE_PATH)
+                os.chdir(EOS_CODES_DIR)
                 fileName = f"EOS_Quarkyonia_{lam:.2f}_{kappa:.2f}.dat"
                 os.system(f"python Quarkyonia.py {kappa} {lam}")
                 print(fileName)
-                os.chdir(src_PATH)
+                os.chdir(SRC_DIR)
                 os.system(
                     f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                 )
@@ -84,11 +87,11 @@ def main(parametric=False, tidal=False, mseos=False):
             EOS_PATH = MSEOS_PATH
             svdSize = 14
         else:
-            EOS_PATH = Quarkies_PATH
+            EOS_PATH = QEOS_PATH
             svdSize = 10
         eval_parametric(svdSize, EOS_PATH, tidal, mseos)  # change to 8 and run from 6
     else:
-        EOS_PATH = f"{base_PATH}/EOS_Data/"
+        EOS_PATH = EOS_DATA_DIR
         fileName = input("Enter the EOS file name: ")
         svdSize = int(input("Enter the SVD size[Int]: "))
         print(f"Running DMD for {fileName}")
@@ -100,14 +103,14 @@ if __name__ == "__main__":
     if isinstance(cleanup, str):
         cleanup = eval(cleanup)
     if cleanup is True:
-        os.system("python cleanData.py")
+        clean_directory()
     # Check if folders exist
     if not os.path.exists(RESULTS_PATH):
         os.makedirs(RESULTS_PATH)
-    if not os.path.exists(EOS_FILES_PATH):
-        os.makedirs(EOS_FILES_PATH)
-    if not os.path.exists(MR_PATH):
-        os.makedirs(MR_PATH)
+    if not os.path.exists(EOS_FILES_DIR):
+        os.makedirs(EOS_FILES_DIR)
+    if not os.path.exists(TOV_PATH):
+        os.makedirs(TOV_PATH)
     if not os.path.exists(PLOTS_PATH):
         os.makedirs(PLOTS_PATH)
     parametric = input("Parametric or General DMD? (True/False)[True]: ") or True

@@ -1,5 +1,6 @@
 .history
 *.pyc*
+.DS_Store
 __pycache__*
 *.png
 Plots/

@@ -1,4 +1,8 @@
-"""Muller Serot Equation of state"""
+####################################################
+# Muller Serot Equation of State (Beta Equilibrium)
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+####################################################
 
 import numpy as np
 from scipy.optimize import fsolve
@@ -7,6 +11,13 @@ import pylab
 from scipy.interpolate import CubicSpline
 import os
 import sys
+import shutil
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+from src import MSEOS_PATH
 
 # constants
 hc = 197.33
@@ -381,7 +392,6 @@ def main(Ls, Lv, zeta, xi, fileName):
     fullEOS = MS_EOS(scvein, fields)
     # np.savetxt("MS_EOS.dat", fullEOS.T, fmt="%.6e", header=nameList)
     fullEOS = fullEOS[:, 4:]
-    # print(fullEOS)
     # Read the lowdensity file
     lowden = np.loadtxt("../EOS_Data/MFT_ns6p.dat")
     eLow, pLow, nbLow = lowden.T
@@ -398,7 +408,9 @@ def main(Ls, Lv, zeta, xi, fileName):
     speedOfSound2 = np.hstack([cs2Low, speedOfSound2])
     fullEOS = np.array([nb2, eps2, pres2, speedOfSound2])
     np.savetxt(fileName, fullEOS.T, fmt="%.6e", header=nameList)
-    os.system(f"mv {fileName} ../EOS_files/MSEOS/")
+    shutil.move(fileName, MSEOS_PATH)
+    print(f"MS EOS saved to {MSEOS_PATH}/{fileName}")
+    # os.system(f"mv {fileName} ../EOS_files/MSEOS/")
 
 
 if __name__ == "__main__":

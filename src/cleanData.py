@@ -1,9 +1,16 @@
-"""
-This code cleans up all the mess created by all the codes in this repo.
-"""
-
+###########################################
+# Clean up the directories
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+###########################################
 import os
 import shutil
+import sys
+
+# Ensure that the parent directory (project root) is in sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 # List of directories and file types to clean up
 cleanup_targets = [
@@ -29,7 +36,7 @@ additional_folders_to_clean = [
 
 
 # Function to remove files or directories
-def clean_directory(directory=".."):
+def clean_directory(directory=BASE_DIR + "/.."):
     for root, dirs, files in os.walk(
         directory, topdown=False
     ):  # Traverse the directory tree from bottom to top
