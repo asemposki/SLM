@@ -1,7 +1,8 @@
-"""Script to evaluate DMDs for the TOV equations
-Author: Sudhanva Lalit
-Last edited: 23 September 2024
-"""
+###########################################
+# Parametric SLM code for TOV data
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+###########################################
 
 import numpy as np
 import os
@@ -9,16 +10,30 @@ import sys
 import time
 from scipy.spatial import distance
 import json
+import shutil
 from itertools import combinations_with_replacement
 from sklearn.neighbors import NearestNeighbors
 import random
-from plotData import plot_parametric, plot_eigs
+from src.plotData import plot_parametric, plot_eigs
 
-BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
-DMD_DATA_PATH = f"{BASE_PATH}/Results/"
-TEST_DATA_PATH = f"{BASE_PATH}/testData/"
-TOV_DATA_PATH = f"{BASE_PATH}/TOV_data/"
-TRAIN_PATH = f"{BASE_PATH}/trainData/"
+# Ensure that the parent directory (project root) is in sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from src import (
+    SRC_DIR,
+    TEST_DATA_PATH,
+    TRAIN_PATH,
+    EOS_DATA_DIR,
+    EOS_FILES_DIR,
+    RESULTS_PATH,
+    TOV_PATH,
+    PLOTS_PATH,
+    MSEOS_PATH,
+    QEOS_PATH,
+    QEOS_TOV_PATH,
+    MSEOS_TOV_PATH,
+)
 
 # Interpolation using banach grim
 
@@ -44,7 +59,7 @@ colors = [
 ]
 
 
-class ParametricDMD:
+class ParametricSLM:
 
     def __init__(self, fileList, filePath, svdSize, tidal=False) -> None:
         self.fileList = fileList
@@ -62,12 +77,15 @@ class ParametricDMD:
 
     @staticmethod
     def complex_encoder(obj):
+        r"""
+        Encode complex numbers as dictionaries for JSON serialization.
+        """
         if isinstance(obj, complex):
             return {"__complex__": True, "real": obj.real, "imag": obj.imag}
         raise TypeError("Type not serializable")
 
     def sort_and_fix_eigenpairs(self, eigenvalues, eigenvectors):
-        """
+        r"""
         Sort eigenvalues and corresponding eigenvectors, and fix the sign of eigenvectors for consistency.
 
         Parameters:
@@ -91,7 +109,7 @@ class ParametricDMD:
         return sorted_eigenvalues, sorted_eigenvectors
 
     def consistent_eigen(self, matrix):
-        """
+        r"""
         Compute consistent eigenvalues and eigenvectors for a given matrix.
 
         Parameters:
@@ -115,7 +133,7 @@ class ParametricDMD:
     def banach_grim_data(
         self, x0, y, x_data, tol=1e-8, max_iter=100, extrapolate=False
     ):
-        """
+        r"""
         Perform Banach GRIM interpolation for multidimensional data.
 
         Parameters:
@@ -149,7 +167,7 @@ class ParametricDMD:
         return y_closest
 
     def augment_data_multiple_columns(self, X):
-        """
+        r"""
         Augment the data matrix X with nonlinear terms for multiple variables.
 
         Parameters:
@@ -175,6 +193,9 @@ class ParametricDMD:
 
     # Numpy based Reduced eigen-pair interpolation
     def fit(self):
+        r"""
+        Fit the data using the parametric SLM algorithm.
+        """
         params = []
 
         # Read data from the dmd files in dmdRes
@@ -182,7 +203,7 @@ class ParametricDMD:
             print(f"fileName = {file}")
             nameList = file.strip("MR.dat").split("_")
             params.append(nameList[2:])
-            data = np.loadtxt(self.filePath + file).T
+            data = np.loadtxt(self.filePath + "/" + file).T
             print("Data", data.shape)
             self.t = np.arange(len(data.T[0]))
             self.dt = (self.t[-1] - self.t[0]) / len(self.t)
@@ -229,17 +250,14 @@ class ParametricDMD:
             # Compute eigenvectors and eigenvalues
             # D, W_r = np.linalg.eig(Atilde)
             D, W_r = self.consistent_eigen(Atilde)
-            # print("D", W_r)
 
             Phi = X2 @ V_r.T @ np.linalg.inv(S_r) @ W_r  # DMD modes
             # Phi = U_r @ W_r
 
             # Compute DMD mode amplitudes b
             x1 = X1[:, 0]
-            # print("Shapes", Phi, "\n", x1)
             # b = np.linalg.lstsq(Phi, x1, rcond=None)[0]
             b = self.regularized_lstsq(Phi, x1, alpha=1e-8)
-            print("b", b)
             # b, residuals, rank, s = lstsq(Phi, x1)
 
             self.LamrVals.append(D)
@@ -288,6 +306,9 @@ class ParametricDMD:
             f.write(serializable_data)
 
     def predict(self, theta):
+        r"""
+        Predict the output for a given input parameter theta.
+        """
         # Compute phi
         theta = np.asarray([theta], dtype=np.float64)[0]
         print("theta:", theta, theta.shape)
@@ -345,7 +366,7 @@ class ParametricDMD:
         return Phi, omega, lambda_vals, bVals, Xdmd, t
 
     def regularized_lstsq(self, A, B, alpha=1e-8):
-        """
+        r"""
         Solve the least squares problem with regularization (Ridge regression).
 
         Parameters:
@@ -383,9 +404,9 @@ class ParametricDMD:
 def main(tidal=False, mseos=False):
     fileList = []
     if mseos:
-        tov_data_path = f"{TOV_DATA_PATH}/MSEOS/"
+        tov_data_path = MSEOS_TOV_PATH
     else:
-        tov_data_path = f"{TOV_DATA_PATH}/Quarkies/"
+        tov_data_path = QEOS_TOV_PATH
 
     for file in os.listdir(tov_data_path):
         fileList.append(file)
@@ -405,13 +426,17 @@ def main(tidal=False, mseos=False):
     if not os.path.exists(TEST_DATA_PATH):
         os.makedirs(TEST_DATA_PATH)
     os.chdir(TEST_DATA_PATH)
-    os.system("rm * && cd ../")
+    for item in os.listdir("."):
+        if os.path.isfile(item) or os.path.islinke(item):
+            os.remove(item)
+        elif os.path.isdir(item):
+            shutil.rmtree(item)
     for file in testFileList:
         if file not in updatedFileList:
             dmdFile = os.path.join(tov_data_path, file)
-            os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
+            shutil.copy(dmdFile, TEST_DATA_PATH)
 
-    training = ParametricDMD(updatedFileList, tov_data_path, 6, tidal)  # 13
+    training = ParametricSLM(updatedFileList, tov_data_path, 10, tidal)  # 13
     training.fit()
 
     time_dict = {}

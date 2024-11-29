@@ -1,10 +1,12 @@
-"""Script to evaluate DMDs for the TOV equations
-Author: Sudhanva Lalit
-Last edited: 20 September 2024
-"""
+###########################################
+# SLM code for the TOV data
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+###########################################
 
 import numpy as np
 import os
+import shutil
 import sys
 import json
 from itertools import combinations_with_replacement
@@ -12,23 +14,31 @@ import time
 from TOV_class import TOVsolver
 from plotData import plot_eigs, plot_S, plot_dmd, plot_dmd_rad
 
-BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
-EOS_DATA_PATH = f"{BASE_PATH}/EOS_Data/"
-EOS_Quarkies = f"{BASE_PATH}/EOS_files/Quarkies/"  # /Quarkies/"
-EOS_MSEOS = f"{BASE_PATH}/EOS_files/MSEOS/"
-dmdResPath = f"{BASE_PATH}/Results/"
-DMD_RES_MSEOS = f"{BASE_PATH}/Results/MSEOS/"
-DMD_RES_Quarkies = f"{BASE_PATH}/Results/Quarkies/"
-TOV_PATH = f"{BASE_PATH}/TOV_data/"
-TOV_MSEOS = f"{BASE_PATH}/TOV_data/MSEOS/"
-TOV_Quarkies = f"{BASE_PATH}/TOV_data/Quarkies/"
-PLOTS_PATH = f"{BASE_PATH}/Plots/"
+# Ensure that the parent directory (project root) is in sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from src import (
+    SRC_DIR,
+    EOS_CODES_DIR,
+    EOS_DATA_DIR,
+    EOS_FILES_DIR,
+    RESULTS_PATH,
+    TOV_PATH,
+    PLOTS_PATH,
+    MSEOS_PATH,
+    QEOS_PATH,
+    QEOS_TOV_PATH,
+    MSEOS_TOV_PATH,
+    SLM_RES_MSEOS,
+    SLM_RES_QEOS,
+)
 
 p0 = 1.285e3
 
 
 def augment_data_multiple_columns(X):
-    """
+    r"""
     Augment the data matrix X with nonlinear terms for multiple variables.
 
     Parameters:
@@ -55,7 +65,7 @@ def augment_data_multiple_columns(X):
 
 # Numpy based DMD
 def DMD(X, r, dt):
-    """
+    r"""
     Dynamic Mode decomposition for the augmented Data
 
     Parameters:
@@ -128,14 +138,15 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
             and mass.
     """
     if parametric is False:
-        eos_file = EOS_DATA_PATH + fileName
+        eos_file = EOS_DATA_DIR + fileName
     else:
         if mseos is True:
-            eos_file = EOS_MSEOS + fileName
-            TOV_PATH = TOV_MSEOS
+            eos_file = os.path.join(MSEOS_PATH, fileName)
+            TOV_PATH = MSEOS_TOV_PATH
         else:
-            eos_file = EOS_Quarkies + fileName
-            TOV_PATH = TOV_Quarkies
+            eos_file = os.path.join(QEOS_PATH, fileName)
+            # eos_file = QEOS_PATH + "/" + fileName
+            TOV_PATH = QEOS_TOV_PATH
     if not os.path.exists(TOV_PATH):
         os.makedirs(TOV_PATH)
 
@@ -165,7 +176,8 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
         file = "MR_" + "_".join(nameList[1:])
     else:
         file = "_".join(["MR", nameList[0], "TOV"])
-    np.savetxt(TOV_PATH + file, dataArray.T, fmt="%1.8e")
+    np.savetxt(file, dataArray.T, fmt="%1.8e")
+    shutil.move(file, TOV_PATH)
     return dataArray
 
 
@@ -242,22 +254,22 @@ def complex_encoder(obj):
 if __name__ == "__main__":
     argv = sys.argv
     (fileName, svdSize, tidal, parametric, mseos) = argv[1:]
+    print("File name: ", fileName)
     nameList = fileName.strip(".dat").split("_")
     name = "SLM_" + "_".join(nameList[1:]) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
     )
-    if eval(mseos) is True and eval(parametric) is True:
-        if os.path.exists(DMD_RES_MSEOS) is False:
-            os.makedirs(DMD_RES_MSEOS)
-        os.chdir(DMD_RES_MSEOS)
-    elif eval(mseos) is False and eval(parametric) is True:
-        if os.path.exists(DMD_RES_Quarkies) is False:
-            os.makedirs(DMD_RES_Quarkies)
-        os.chdir(DMD_RES_Quarkies)
-        print("Quarkies")
+    if mseos is True and parametric is True:
+        if os.path.exists(SLM_RES_MSEOS) is False:
+            os.makedirs(SLM_RES_MSEOS)
+        os.chdir(SLM_RES_MSEOS)
+    elif mseos is False and parametric is True:
+        if os.path.exists(SLM_RES_QEOS) is False:
+            os.makedirs(SLM_RES_QEOS)
+        os.chdir(SLM_RES_QEOS)
     else:
-        os.chdir(dmdResPath)
+        os.chdir(RESULTS_PATH)
     XdmdRes = []
     for i in range(len(Xdmd) - 1):
         XdmdRes.append(np.exp(Xdmd[i].real)[::-1])
