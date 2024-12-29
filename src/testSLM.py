@@ -24,11 +24,13 @@ from src import (
     PLOTS_PATH,
     MSEOS_PATH,
     QEOS_PATH,
+    SLM_RES_MSEOS,
+    SLM_RES_QEOS,
 )
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 5)  # np.arange(300, 500, 40)  # 370 - 385
-kappaVal = np.linspace(0.1, 0.3, 5)
+lamVal = np.linspace(300, 500, 21)  # np.arange(300, 500, 40)  # 370 - 385
+kappaVal = np.linspace(0.1, 0.3, 21)
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)
@@ -124,11 +126,11 @@ if __name__ == "__main__":
         if isinstance(mseos, str):
             mseos = eval(mseos)
         if mseos is True:
-            if not os.path.exists(RESULTS_MSEOS_PATH):
-                os.makedirs(RESULTS_MSEOS_PATH)
+            if not os.path.exists(SLM_RES_MSEOS):
+                os.makedirs(SLM_RES_MSEOS)
         else:
-            if not os.path.exists(RESULTS_QUARKIES_PATH):
-                os.makedirs(RESULTS_QUARKIES_PATH)
+            if not os.path.exists(SLM_RES_QEOS):
+                os.makedirs(SLM_RES_QEOS)
         main(parametric, tidal, mseos)
     else:
         if not os.path.exists(RESULTS_PATH):

@@ -46,6 +46,7 @@ def main(kap, lamInput):
     # Initialize arrays
     epst = np.zeros(len(kArray))
     nbq = np.zeros(len(kArray))
+    nQuarks = []
 
     for i in range(len(kArray)):
         kfb = kArray[i]
@@ -56,6 +57,7 @@ def main(kap, lamInput):
             theta = 0
         else:
             theta = 1
+            nQuarks.append(i)
         kfq = abs(kfb - delta) / Nc * theta
         ll = Nc * kfq
         ul = kfb
@@ -106,6 +108,15 @@ def main(kap, lamInput):
     press = -epst + interpErho(nbq, 1) * nbq
     interpPrho = CubicSpline(nbq, press)
     cs2 = interpPrho(nbq, 1) / interpErho(nbq, 1)
+
+    # Write where quarks begin to appear
+    filename = "quarkyonia_params.txt"
+    if os.path.exists(filename):
+        with open(filename, "a") as f:
+            f.write(f"{kap} {lamInput} {nbq[nQuarks[0]]} \n")
+    else:
+        with open(filename, "w") as f:
+            f.write(f"{kap} {lamInput} {nbq[nQuarks[0]]} \n")
 
     # Add lowden part
     # Read the lowdensity file

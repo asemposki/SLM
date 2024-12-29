@@ -14,7 +14,7 @@ import shutil
 from itertools import combinations_with_replacement
 from sklearn.neighbors import NearestNeighbors
 import random
-from src.plotData import plot_parametric, plot_eigs
+from plotData import plot_parametric
 
 # Ensure that the parent directory (project root) is in sys.path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -130,11 +130,117 @@ class ParametricSLM:
         return sorted_eigenvalues, sorted_eigenvectors
 
     # Function for the Banach GRIM interpolation algorithm
+    # def banach_grim_data(
+    #     self, x0, y, x_data, tol=1e-8, max_iter=100, extrapolate=False
+    # ):
+    #     r"""
+    #     Perform Banach GRIM interpolation for multidimensional data.
+
+    #     Parameters:
+    #     x0 (array-like): Initial guess (2D array) for the input.
+    #     y (array-like): Target values (output data points).
+    #     x_data (array-like): Input data points corresponding to the output.
+    #     tol (float): Tolerance level to achieve.
+    #     max_iter (int): Maximum number of iterations.
+
+    #     Returns:
+    #     y_interp (float): Interpolated output value for input `x0`.
+    #     """
+    #     x = np.array(x0)
+    #     for i in range(max_iter):
+    #         # Find the nearest neighbors in the dataset based on distance
+    #         distances = distance.cdist([x], x_data, metric="euclidean")
+    #         nearest_idx = np.argmin(distances)
+
+    #         # Interpolation step: adjust based on the closest point
+    #         y_closest = y[nearest_idx]
+    #         x_new = x_data[nearest_idx]
+
+    #         if np.linalg.norm(x_new - x) < tol:
+    #             print(f"Converged after {i+1} iterations.")
+    #             return y_closest
+
+    #         # Update the point to the closest one for the next iteration
+    #         x = x_new
+
+    #     print("Did not converge within the maximum number of iterations.")
+    #     return y_closest
+
+    # def banach_grim_data(
+    #     self,
+    #     x0,
+    #     y,
+    #     x_data,
+    #     tol=1e-8,
+    #     max_iter=100,
+    #     num_neighbors=5,
+    #     reg=1e-5,
+    #     sigma=1.0,
+    # ):
+    #     r"""
+    #     Perform Banach GRIM interpolation for multidimensional data with refinements.
+
+    #     Parameters:
+    #     x0 (array-like): Initial guess (2D array) for the input.
+    #     y (array-like): Target values (output data points).
+    #     x_data (array-like): Input data points corresponding to the output.
+    #     tol (float): Tolerance level to achieve.
+    #     max_iter (int): Maximum number of iterations.
+    #     num_neighbors (int): Number of nearest neighbors to consider for interpolation.
+    #     reg (float): Regularization parameter to stabilize interpolation.
+    #     sigma (float): Scale parameter for Gaussian weighting.
+
+    #     Returns:
+    #     y_interp (float): Interpolated output value for input `x0`.
+    #     """
+    #     x = np.array(x0)
+    #     for i in range(max_iter):
+    #         # Find distances to all points in x_data
+    #         distances = distance.cdist([x], x_data, metric="euclidean").flatten()
+
+    #         # Select the indices of the closest neighbors
+    #         nearest_indices = np.argsort(distances)[:num_neighbors]
+    #         nearest_distances = distances[nearest_indices]
+    #         nearest_y = y[nearest_indices]
+    #         nearest_x = x_data[nearest_indices]
+
+    #         # Apply Gaussian weighting based on distances
+    #         weights = np.exp(-(nearest_distances**2) / (2 * sigma**2)) + reg
+    #         weights /= np.sum(weights)  # Normalize weights
+
+    #         # Ensure weights have the correct shape for broadcasting
+    #         weights = weights[:, np.newaxis]  # Reshape to (num_neighbors, 1)
+
+    #         # Interpolated y value
+    #         y_interp = np.sum(weights * nearest_y, axis=0)
+
+    #         # Refine the x point based on weighted interpolation of neighbors
+    #         x_new = np.sum(weights * nearest_x, axis=0)
+
+    #         # Check for convergence
+    #         if np.linalg.norm(x_new - x) < tol:
+    #             print(f"Converged after {i+1} iterations.")
+    #             return y_interp
+
+    #         # Update x for the next iteration
+    #         x = x_new
+
+    #     print("Did not converge within the maximum number of iterations.")
+    #     return y_interp
     def banach_grim_data(
-        self, x0, y, x_data, tol=1e-8, max_iter=100, extrapolate=False
+        self,
+        x0,
+        y,
+        x_data,
+        tol=1e-8,
+        max_iter=100,
+        num_neighbors=5,
+        reg=1e-5,
+        sigma=1.0,
+        max_basis_size=10,
     ):
         r"""
-        Perform Banach GRIM interpolation for multidimensional data.
+        Perform Banach GRIM interpolation for multidimensional data with refinements.
 
         Parameters:
         x0 (array-like): Initial guess (2D array) for the input.
@@ -142,29 +248,53 @@ class ParametricSLM:
         x_data (array-like): Input data points corresponding to the output.
         tol (float): Tolerance level to achieve.
         max_iter (int): Maximum number of iterations.
+        num_neighbors (int): Number of nearest neighbors to consider for interpolation.
+        reg (float): Regularization parameter to stabilize interpolation.
+        sigma (float): Scale parameter for Gaussian weighting.
+        max_basis_size (int): Maximum size of the basis pool for interpolation.
 
         Returns:
         y_interp (float): Interpolated output value for input `x0`.
         """
         x = np.array(x0)
+
         for i in range(max_iter):
-            # Find the nearest neighbors in the dataset based on distance
-            distances = distance.cdist([x], x_data, metric="euclidean")
-            nearest_idx = np.argmin(distances)
+            # Compute distances to all points in x_data
+            distances = distance.cdist([x], x_data, metric="euclidean").flatten()
 
-            # Interpolation step: adjust based on the closest point
-            y_closest = y[nearest_idx]
-            x_new = x_data[nearest_idx]
+            # Dynamically adjust the number of neighbors based on the iteration
+            neighbors = min(num_neighbors + i, max_basis_size)
 
-            if np.linalg.norm(x_new - x) < tol:
-                print(f"Converged after {i+1} iterations.")
-                return y_closest
+            # Select the indices of the closest neighbors
+            nearest_indices = np.argsort(distances)[:neighbors]
+            nearest_distances = distances[nearest_indices]
+            nearest_y = y[nearest_indices]
+            nearest_x = x_data[nearest_indices]
 
-            # Update the point to the closest one for the next iteration
+            # Compute Gaussian weights with regularization
+            weights = np.exp(-(nearest_distances**2) / (2 * sigma**2)) + reg
+            weights /= np.sum(weights)  # Normalize weights
+
+            # Ensure weights have the correct shape for broadcasting
+            weights = weights[:, np.newaxis]
+
+            # Interpolated y value
+            y_interp = np.sum(weights * nearest_y, axis=0)
+
+            # Refine the x point based on weighted interpolation of neighbors
+            x_new = np.sum(weights * nearest_x, axis=0)
+
+            # Compute error (norm difference between current and new point)
+            error = np.linalg.norm(x_new - x)
+
+            # Check for convergence
+            if error < tol:
+                return y_interp
+
+            # Update x for the next iteration
             x = x_new
 
-        print("Did not converge within the maximum number of iterations.")
-        return y_closest
+        return y_interp
 
     def augment_data_multiple_columns(self, X):
         r"""
@@ -222,14 +352,6 @@ class ParametricSLM:
 
             # Compute SVD of X1
             U, S, Vt = np.linalg.svd(X1, full_matrices=False)
-            # sorted_indices = np.argsort(-S)
-            # S = S[sorted_indices]
-            # U = U[:, sorted_indices]
-            # Vt = Vt[sorted_indices, :]
-            if (np.inf in U) or (np.inf in S) or (np.inf in Vt):
-                print("!! ! !!")
-            if (np.nan in U) or (np.nan in S) or (np.nan in Vt):
-                print("! !!! !")
 
             # Truncate to rank r
             self.r = min(self.svdSize, U.shape[1])
@@ -239,13 +361,6 @@ class ParametricSLM:
 
             # Compute Atilde
             Atilde = U_r.T @ X2 @ V_r.T @ np.linalg.inv(S_r)
-
-            if np.inf in Atilde:
-                print("\n" * 5)
-                print("inf issue !!!")
-            if np.nan in Atilde:
-                print("\n" * 5)
-                print("nan issue !!!")
 
             # Compute eigenvectors and eigenvalues
             # D, W_r = np.linalg.eig(Atilde)
@@ -316,6 +431,7 @@ class ParametricSLM:
         # Interpolate lambda
         lambda_real = self.banach_grim_data(theta, self.LamrVals.real, self.params)
         lambda_imag = self.banach_grim_data(theta, self.LamrVals.imag, self.params)
+        print("lambda_real:", lambda_real)
         lambda_vals = lambda_real + 1j * lambda_imag
         print("lambda:", lambda_vals)
 
@@ -436,7 +552,7 @@ def main(tidal=False, mseos=False):
             dmdFile = os.path.join(tov_data_path, file)
             shutil.copy(dmdFile, TEST_DATA_PATH)
 
-    training = ParametricSLM(updatedFileList, tov_data_path, 10, tidal)  # 13
+    training = ParametricSLM(updatedFileList, tov_data_path, 6, tidal)  # 13
     training.fit()
 
     time_dict = {}

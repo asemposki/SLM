@@ -182,6 +182,28 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
 
 
 def main(fileName, svdSize, tidal=False, parametric=False, mseos=True):
+    r"""
+    Main function to run the SLM code. Solves the TOV equation and
+    computes the SLM modes.
+
+    Parameters:
+        fileName (str): Filename containing the EOS in the format nb (fm^-3),
+            E (MeV), P (MeV/fm^3)
+        svdSize (int): Size of the truncated SVD
+        tidal (bool): Whether to include tidal deformability
+        parametric (bool): Whether the EOS is parametric
+        mseos (bool): Whether to use MSEOS
+
+    Returns:
+        linT (np.ndarray): Time vector
+        phi (np.ndarray): DMD modes
+        omega (np.ndarray): Continuous-time eigenvalues
+        lam (np.ndarray): Discrete-time eigenvalues
+        b (np.ndarray): DMD mode amplitudes
+        Xdmd (np.ndarray): DMD reconstruction
+        HFTime (float): Time taken for solving TOV
+        DMDTime (float): Time taken for DMD
+    """
     startHFTime = time.time()
     if tidal is True:
         radius, pcentral, mass, tidal_def = solve_tov(
@@ -246,6 +268,10 @@ def main(fileName, svdSize, tidal=False, parametric=False, mseos=True):
 
 
 def complex_encoder(obj):
+    r"""
+    Complex encoder for JSON serialization. Converts complex numbers to
+    real and imaginary parts.
+    """
     if isinstance(obj, complex):
         return {"__complex__": True, "real": obj.real, "imag": obj.imag}
     raise TypeError("Type not serializable")
@@ -254,20 +280,21 @@ def complex_encoder(obj):
 if __name__ == "__main__":
     argv = sys.argv
     (fileName, svdSize, tidal, parametric, mseos) = argv[1:]
-    print("File name: ", fileName)
+    print("File name: ", fileName, parametric, mseos)
     nameList = fileName.strip(".dat").split("_")
     name = "SLM_" + "_".join(nameList[1:]) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
     )
-    if mseos is True and parametric is True:
-        if os.path.exists(SLM_RES_MSEOS) is False:
-            os.makedirs(SLM_RES_MSEOS)
-        os.chdir(SLM_RES_MSEOS)
-    elif mseos is False and parametric is True:
-        if os.path.exists(SLM_RES_QEOS) is False:
-            os.makedirs(SLM_RES_QEOS)
-        os.chdir(SLM_RES_QEOS)
+    if eval(parametric) is True:
+        if eval(mseos) is True:
+            if os.path.exists(SLM_RES_MSEOS) is False:
+                os.makedirs(SLM_RES_MSEOS)
+            os.chdir(SLM_RES_MSEOS)
+        else:
+            if os.path.exists(SLM_RES_QEOS) is False:
+                os.makedirs(SLM_RES_QEOS)
+            os.chdir(SLM_RES_QEOS)
     else:
         os.chdir(RESULTS_PATH)
     XdmdRes = []
@@ -290,6 +317,6 @@ if __name__ == "__main__":
     serializable_data = json.dumps(
         data, default=complex_encoder, sort_keys=True, indent=4
     )
-
+    print("Path: ", os.getcwd())
     with open(f"{name}", "w") as file:
         file.write(serializable_data)
