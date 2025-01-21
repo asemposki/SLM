@@ -242,7 +242,7 @@ class TOVsolver:
             The value of F(x) at the current radius.
         """
 
-        one = 1.0 - (3.0 / 2.0) * (eps - pres)
+        one = 1.0 - (3.0 / 2.0) * (eps - pres) * x**2.0
         two = 1.0 - mass / x
         return one / two
 
@@ -299,7 +299,7 @@ class TOVsolver:
         """
 
         # love number calculation
-        beta = mass / radius
+        beta = (mass / radius) * (self.rad0 / (2.0 * self.mass0))
         k2 = (
             (8.0 / 5.0)
             * beta**5.0
@@ -324,7 +324,7 @@ class TOVsolver:
         )
 
         # tidal deformability calculation
-        tidal_deform = (2.0 / 3.0) * k2 / (beta**5.0)
+        tidal_deform = (2.0 / 3.0) * k2 * (2.0 * self.mass0 * radius / (self.rad0 * mass))**5.0
 
         return tidal_deform, k2
 
@@ -436,17 +436,17 @@ class TOVsolver:
         self.total_radius = max_radius
         self.total_pres_central = pres_central
         # max mass calculation, radius, and central pressure
-        maximum_mass = np.max(max_mass)
-        corr_radius_index = np.where(max_mass == maximum_mass)[0][0]
-        corr_radius = max_radius[corr_radius_index]
-        corr_pres = pres_central[corr_radius_index]
+        self.maximum_mass = np.max(max_mass)
+        corr_radius_index = np.where(max_mass == self.maximum_mass)[0][0]
+        self.corr_radius = max_radius[corr_radius_index]
+        self.corr_pres = pres_central[corr_radius_index]
         print(
             "Max mass: ",
-            maximum_mass,
+            self.maximum_mass,
             "Radius: ",
-            corr_radius,
+            self.corr_radius,
             "Central pressure: ",
-            corr_pres,
+            self.corr_pres,
         )
 
         # tidal deformability
@@ -517,11 +517,11 @@ class TOVsolver:
             # check the solution
             print(
                 "Radius: ",
-                corr_radius,
+                self.corr_radius,
                 "Maximum mass: ",
-                maximum_mass,
+                self.maximum_mass,
                 "Central pressure: ",
-                corr_pres,
+                self.corr_pres,
             )
 
         # if desired, write to a file
@@ -551,29 +551,16 @@ class TOVsolver:
                 each EOS used.
         """
 
-        # prepare array
-        samples = len(self.pres_array_unscaled.T)
-        c_dens = np.zeros([samples])
+        # interpolate the EOS to find the proper central densities
+        p_n_interp = interp1d(
+            self.pres_array_unscaled,
+            self.nB_array,
+            kind="cubic",
+            fill_value="extrapolate",
+        )
 
-        # check if reshaping is required
-        if self.pres_array_unscaled.ndim == 1:
-            self.pres_array_unscaled = self.pres_array_unscaled.reshape(
-                -1, 1
-            )  # [MeV/fm^3]
-
-        # run over the samples (or single array)
-        for j in range(samples):
-
-            # interpolate the EOS to find the proper central densities
-            p_n_interp = interp1d(
-                self.pres_array_unscaled[:, j],
-                self.nB_array,
-                kind="cubic",
-                fill_value="extrapolate",
-            )
-
-            # solve at the proper central pressure for nB_central
-            c_dens[j] = p_n_interp(self.max_pres_arr[j])
+        # solve at the proper central pressure for nB_central
+        c_dens = p_n_interp(self.corr_pres)
 
         return c_dens
 
@@ -604,9 +591,11 @@ class TOVsolver:
 
 def main():
 
-    filePath = os.getcwd()
+    filePath = os.getcwd().strip('src')
     eosName = "sorted_Sly4.dat"
     fileName = filePath + "/EOS_Data/" + eosName
+
+    print(filePath + '/EOS_Data/')
 
     tov = TOVsolver(fileName, tidal=True)
     start_time = time.time()
@@ -616,6 +605,7 @@ def main():
 
     print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
 
+    print('Central density: ', tov.central_dens())
 
 if __name__ == "__main__":
     main()
