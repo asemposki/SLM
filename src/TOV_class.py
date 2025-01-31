@@ -242,7 +242,7 @@ class TOVsolver:
             The value of F(x) at the current radius.
         """
 
-        one = 1.0 - (3.0 / 2.0) * (eps - pres)
+        one = 1.0 - (3.0 / 2.0) * (eps - pres) * x**2.0
         two = 1.0 - mass / x
         return one / two
 
@@ -299,7 +299,7 @@ class TOVsolver:
         """
 
         # love number calculation
-        beta = mass / radius
+        beta = (mass / radius) * (self.rad0 / (2.0 * self.mass0))
         k2 = (
             (8.0 / 5.0)
             * beta**5.0
@@ -324,7 +324,7 @@ class TOVsolver:
         )
 
         # tidal deformability calculation
-        tidal_deform = (2.0 / 3.0) * k2 / (beta**5.0)
+        tidal_deform = (2.0 / 3.0) * k2 * (2.0 * self.mass0 * radius / (self.rad0 * mass))**5.0
 
         return tidal_deform, k2
 
