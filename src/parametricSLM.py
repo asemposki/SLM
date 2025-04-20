@@ -195,7 +195,7 @@ class ParametricDMD:
             nameList = file.strip("MR.dat").split("_")
             params.append(nameList[2:])
             data = np.loadtxt(self.filePath + file).T
-            # print("Data", data.shape)
+            print("Data", data.shape)
             self.t = np.arange(len(data.T[0]))
             self.dt = (self.t[-1] - self.t[0]) / len(self.t)
 
@@ -204,13 +204,15 @@ class ParametricDMD:
             if self.tidal:
                 X.append(np.log(data[3]))
             X = np.array(X, dtype=np.float64)
+            if i == 0:
+                print("X", X)
             self.mm1 = X.shape[1]
 
             self.n = len(X)
             X = self.augment_data_multiple_columns(X)
             X1 = np.delete(X, -1, axis=1)
             X2 = np.delete(X, 0, axis=1)
-            # print(X.shape, self.mm1)
+            print(X.shape, self.mm1)
 
             # Compute SVD of X1
             U, S, Vt = np.linalg.svd(X1, full_matrices=False)
@@ -224,7 +226,7 @@ class ParametricDMD:
             U_r = U[:, : self.r]
             S_r = np.diag(S[: self.r])
             V_r = Vt[: self.r, :]
-            # print("Sr", V_r.shape)
+            print("Sr", V_r.shape)
 
             # Compute Atilde
             Atilde = U_r.T @ X2 @ V_r.T @ np.linalg.inv(S_r)
@@ -233,14 +235,20 @@ class ParametricDMD:
             D, W_r = np.linalg.eig(Atilde)
             # D, W_r = self.consistent_eigen(Atilde)
             omega = np.log(D) / self.dt
+            if i == 0:
+                print("D", D)
+                print("omega", omega)
 
             Phi = X2 @ V_r.T @ np.linalg.inv(S_r) @ W_r  # DMD modes
             # Phi = U_r @ W_r
 
             # Compute DMD mode amplitudes b
             x1 = X1[:, 0]
+            # print("Shapes", Phi, "\n", x1)
             b = np.linalg.lstsq(Phi, x1, rcond=None)[0]
             # b = self.regularized_lstsq(Phi, x1, alpha=1e-6)
+            if i == 0:
+                print("b", b)
             # b, residuals, rank, s = lstsq(Phi, x1)
 
             self.LamrVals.append(D)
@@ -312,7 +320,7 @@ class ParametricDMD:
     def predict(self, theta):
         # Compute phi
         theta = np.asarray([theta], dtype=np.float64)[0]
-        print("theta:", theta)
+        print("theta:", theta, theta.shape)
 
         # Interpolate lambda
         lambda_real = self.greedy_recombination_interpolation(
@@ -438,23 +446,10 @@ def main(tidal=False, mseos=False):
         fileList.append(file)
 
     random.seed(48824)
-    fileList = sorted(fileList)
-    updatedFileList = [file for file in fileList[::3]]
-    print(len(updatedFileList))
-    updatedFileList = updatedFileList[::4]
-    # updatedFileList = random.sample(fileList, 20)
-    testFileList = [file for file in fileList[::4] if file not in updatedFileList]
-    print(len(testFileList))
-    testFileList = testFileList[::4]
-    # testFileList = random.sample(fileList, 10)  # originally 10
-    # testFileList = sorted(testFileList)
-    
-    print("\n\n")
-    print("training set:")
-    print(updatedFileList)
-    print("validation set:")
-    print(testFileList)
-    print("\n\n")
+    updatedFileList = random.sample(fileList, 20)
+    updatedFileList = sorted(updatedFileList)
+    testFileList = random.sample(fileList, 5)  # originally 10
+    testFileList = sorted(testFileList)
 
     if not os.path.exists(TEST_DATA_PATH):
         os.makedirs(TEST_DATA_PATH)
@@ -464,8 +459,8 @@ def main(tidal=False, mseos=False):
         if file not in updatedFileList:
             dmdFile = os.path.join(tov_data_path, file)
             os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
-    
-    training = ParametricDMD(updatedFileList, tov_data_path, 6, tidal)  # 13
+
+    training = ParametricDMD(updatedFileList, tov_data_path, 10, tidal)  # 13
     training.fit()
 
     time_dict = {}
@@ -481,14 +476,14 @@ def main(tidal=False, mseos=False):
             data = np.loadtxt(os.path.join(TEST_DATA_PATH, file))
             X = data.T
             name = "Data_" + "_".join(testParam)
-            # plot_parametric(Xdmd, X, name, tidal)
-            # print(f"plotted file: {name}")
+            plot_parametric(Xdmd, X, name, tidal)
+            print(f"plotted file: {name}")
             total_time = stoptime - starttime
             time_dict[file] = total_time
 
     serializable_data = json.dumps(time_dict, sort_keys=True, indent=4)
 
-    with open(f"slm_time_data.json", "w") as file:
+    with open(f"dmd_time_data.json", "w") as file:
         file.write(serializable_data)
 
 

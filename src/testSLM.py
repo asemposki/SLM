@@ -9,14 +9,12 @@ import os
 import subprocess
 import sys
 import numpy as np
-import time
+
 
 base_PATH = os.path.join(os.path.dirname(__file__), "..")
 src_PATH = f"{base_PATH}/src/"
 EOS_FILES_PATH = f"{base_PATH}/EOS_files/"
 RESULTS_PATH = f"{base_PATH}/Results"
-RESULTS_MSEOS_PATH = f"{RESULTS_PATH}/MSEOS/"
-RESULTS_QUARKIES_PATH = f"{RESULTS_PATH}/Quarkies/"
 EOS_CODE_PATH = f"{base_PATH}/EOS_Codes/"
 MR_PATH = f"{base_PATH}/TOV_data"
 Quarkies_PATH = f"{base_PATH}/EOS_files/Quarkies/"
@@ -65,28 +63,19 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
     else:
         if not os.path.exists(Quarkies_PATH):
             os.makedirs(Quarkies_PATH)
-        
-        i = 1
         for lam in lamVal:
             for kappa in kappaVal:
-                print(f"\nrun {i} of {len(lamVal)*len(kappaVal)}")
                 # Make Quarkies
                 os.chdir(EOS_CODE_PATH)
                 fileName = f"EOS_Quarkyonia_{lam:.2f}_{kappa:.2f}.dat"
                 os.system(f"python Quarkyonia.py {kappa} {lam}")
                 print(fileName)
                 os.chdir(src_PATH)
-                time_initial = time.time()
                 os.system(
                     f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                 )
-                time_final = time.time()
-                
-                runtime = time_final - time_initial
-                print(f"Approximate time remaining: {runtime * (len(lamVal)*len(kappaVal) - i) / 60:.4} minutes.\n\n")
-                i += 1
 
-    os.system(f"python parametricSLM.py {tidal} {mseos}")
+    os.system(f"python pSLM.py {tidal} {mseos}")
 
 
 def main(parametric=False, tidal=False, mseos=False):
@@ -96,7 +85,7 @@ def main(parametric=False, tidal=False, mseos=False):
             svdSize = 14
         else:
             EOS_PATH = Quarkies_PATH
-            svdSize = 6
+            svdSize = 10
         eval_parametric(svdSize, EOS_PATH, tidal, mseos)  # change to 8 and run from 6
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"
@@ -113,6 +102,8 @@ if __name__ == "__main__":
     if cleanup is True:
         os.system("python cleanData.py")
     # Check if folders exist
+    if not os.path.exists(RESULTS_PATH):
+        os.makedirs(RESULTS_PATH)
     if not os.path.exists(EOS_FILES_PATH):
         os.makedirs(EOS_FILES_PATH)
     if not os.path.exists(MR_PATH):
@@ -129,14 +120,6 @@ if __name__ == "__main__":
         mseos = input("MSEOS or Quarkies? (True/False)[True]: ") or True
         if isinstance(mseos, str):
             mseos = eval(mseos)
-        if mseos is True:
-            if not os.path.exists(RESULTS_MSEOS_PATH):
-                os.makedirs(RESULTS_MSEOS_PATH)
-        else:
-            if not os.path.exists(RESULTS_QUARKIES_PATH):
-                os.makedirs(RESULTS_QUARKIES_PATH)
         main(parametric, tidal, mseos)
     else:
-        if not os.path.exists(RESULTS_PATH):
-            os.makedirs(RESULTS_PATH)
         main(parametric, tidal)

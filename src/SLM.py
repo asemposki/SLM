@@ -243,19 +243,18 @@ if __name__ == "__main__":
     argv = sys.argv
     (fileName, svdSize, tidal, parametric, mseos) = argv[1:]
     nameList = fileName.strip(".dat").split("_")
-    name = "SLM_" + "_".join(nameList[1:]) + ".dat"
+    name = "DMD_" + "_".join(nameList[1:]) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
     )
-    if eval(mseos) is True and eval(parametric) is True:
+    if mseos is True and parametric is True:
         if os.path.exists(DMD_RES_MSEOS) is False:
             os.makedirs(DMD_RES_MSEOS)
         os.chdir(DMD_RES_MSEOS)
-    elif eval(mseos) is False and eval(parametric) is True:
+    elif mseos is False and parametric is True:
         if os.path.exists(DMD_RES_Quarkies) is False:
             os.makedirs(DMD_RES_Quarkies)
         os.chdir(DMD_RES_Quarkies)
-        print("Quarkies")
     else:
         os.chdir(dmdResPath)
     XdmdRes = []
