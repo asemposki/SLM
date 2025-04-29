@@ -8,3 +8,6 @@ TOV_data/
 EOS_files/
 Results/
 trainData/
+
+.DS_Store
+*/.DS_Store
