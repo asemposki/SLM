@@ -129,6 +129,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     """
     if parametric is False:
         eos_file = EOS_DATA_PATH + fileName
+        global TOV_PATH
     else:
         if mseos is True:
             eos_file = EOS_MSEOS + fileName
@@ -153,18 +154,8 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
         # dataArray.append(file.tidal_deformability.flatten()[::-1])
 
     dataArray = np.asarray(dataArray, dtype=np.float64)
-    if "_" in fileName:
-        nameList = fileName.split("_")
-        if len(nameList) > 2:
-            file = "MR_" + "_".join(nameList[1:])
-        else:
-            file = "_".join(["MR", nameList[0], "TOV"])
-    else:
-        nameList = fileName.split(".")  # rstrip(".dat")  #.split("_")
-    if len(nameList) > 2:
-        file = "MR_" + "_".join(nameList[1:])
-    else:
-        file = "_".join(["MR", nameList[0], "TOV"])
+    name = (fileName.split(".")[0].split("_eos")[0])
+    file = "MR_" + name + ".dat"
     np.savetxt(TOV_PATH + file, dataArray.T, fmt="%1.8e")
     return dataArray
 
@@ -243,7 +234,7 @@ if __name__ == "__main__":
     argv = sys.argv
     (fileName, svdSize, tidal, parametric, mseos) = argv[1:]
     nameList = fileName.strip(".dat").split("_")
-    name = "DMD_" + "_".join(nameList[1:]) + ".dat"
+    name = "DMD_" + (fileName.split(".")[0].split("_eos")[0]) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
     )
