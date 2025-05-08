@@ -35,47 +35,47 @@ def eps(k, m):
 def main(kap, lamInput):
     lam = lamInput / hc
     kfmin = 0.25
-    kfmax = 5.0
+    kfmax = 10.0  # was = 5.0
     kArray = np.linspace(kfmin, kfmax, 100)
     # Initialize arrays
     epst = np.zeros(len(kArray))
     nbq = np.zeros(len(kArray))
 
     for i in range(len(kArray)):
-        kfb = kArray[i]
-        delta = lam**3 / kfb**2 + kap * lam / Nc**2
+        kfb = kArray[i]  # fermi momentum for bosons
+        delta = lam**3 / kfb**2 + kap * lam / Nc**2  # quark fermi surface where nucleons reside
 
         # Neutrons
         if kfb < delta:
             theta = 0
         else:
             theta = 1
-        kfq = abs(kfb - delta) / Nc * theta
-        ll = Nc * kfq
-        ul = kfb
-        nn = (ul**3 - ll**3) / (3 * pi2)
-        u = nn / n0
-        vn = (a * u + b * u**2) * nn
-        Eul = eps(ul, mn)
-        Ell = eps(ll, mn)
-        epskb = 2 * (Eul - Ell) * hc
+        kfq = abs(kfb - delta) / Nc * theta  # fermi momentum of quarks
+        ll = Nc * kfq  # lower limit
+        ul = kfb  # upper limit
+        nn = (ul**3 - ll**3) / (3 * pi2)  # neutron number density
+        u = nn / n0  # number density saturation ratio (?)
+        vn = (a * u + b * u**2) * nn  # energy density due to interactions
+        Eul = eps(ul, mn)  # upper limit on epsilon
+        Ell = eps(ll, mn)  # lower limit on epsilon
+        epskb = 2 * (Eul - Ell) * hc 
         epstb = epskb + vn
 
         # Add quarks
-        kfd = abs(kfb - delta) / 3.0 * theta
-        kfu = 2 ** (-1 / 3.0) * kfd
-        nq = (kfd**3 + kfu**3) / (3 * pi2)
+        kfd = abs(kfb - delta) / 3.0 * theta  # fermi momentum of down quarks
+        kfu = 2 ** (-1 / 3.0) * kfd  # fermi momentum of up quarks
+        nq = (kfd**3 + kfu**3) / (3 * pi2)  # quark number density
         nu = kfu**3 / pi2
         nd = kfd**3 / pi2
 
         # Total baryon density
-        nb = nn + nq
+        nb = nn + nq  # baryon number density
         ebk = epskb / nb - mnmev
         ebi = vn / nb
         eb = ebk + ebi
 
         # Quarks only
-        mq = mn / 3.0
+        mq = mn / 3.0  # quark mass (in MeV)
         eulu = eps(kfu, mq)
         ellu = eps(0.0, mq)
         epsku = 2 * Nc * (eulu - ellu) * hc

@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import numpy as np
+import time
 
 
 base_PATH = os.path.join(os.path.dirname(__file__), "..")
@@ -24,8 +25,8 @@ TRAIN_PATH = f"{base_PATH}/trainData/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 20)  # np.arange(300, 500, 40)  # 370 - 385
-kappaVal = np.linspace(0.1, 0.3, 10)
+lamVal = np.linspace(300, 500, 20)  # 20
+kappaVal = np.linspace(0.1, 0.3, 10)  # 10
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)
@@ -63,19 +64,27 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
     else:
         if not os.path.exists(Quarkies_PATH):
             os.makedirs(Quarkies_PATH)
+        i = 1
+        runs = (len(lamVal) * len(kappaVal))
         for lam in lamVal:
             for kappa in kappaVal:
+                print(f"\n{i} of {runs} runs.")
+                time_initial = time.time()
                 # Make Quarkies
                 os.chdir(EOS_CODE_PATH)
                 fileName = f"EOS_Quarkyonia_{lam:.2f}_{kappa:.2f}.dat"
-                os.system(f"python Quarkyonia.py {kappa} {lam}")
+                os.system(f"python3 Quarkyonia.py {kappa} {lam}")
                 print(fileName)
                 os.chdir(src_PATH)
                 os.system(
-                    f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
+                    f"python3 SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
                 )
+                time_final = time.time()
+                runtime = time_final - time_initial
+                i += 1
+                print(f"ETA: {runtime * (runs - i + 1) / 60:.4} minutes")
 
-    os.system(f"python pSLM.py {tidal} {mseos}")
+    # os.system(f"python3 pSLM.py {tidal} {mseos}")
 
 
 def main(parametric=False, tidal=False, mseos=False):
@@ -85,8 +94,8 @@ def main(parametric=False, tidal=False, mseos=False):
             svdSize = 14
         else:
             EOS_PATH = Quarkies_PATH
-            svdSize = 10
-        eval_parametric(svdSize, EOS_PATH, tidal, mseos)  # change to 8 and run from 6
+            svdSize = 14
+        eval_parametric(svdSize, EOS_PATH, tidal, mseos)
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"
         fileName = input("Enter the EOS file name: ")

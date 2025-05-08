@@ -15,7 +15,7 @@ import random
 from plotData import plot_parametric, plot_eigs
 
 BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
-DMD_DATA_PATH = f"{BASE_PATH}/Results/"
+# DMD_DATA_PATH = f"{BASE_PATH}/Results/"
 TEST_DATA_PATH = f"{BASE_PATH}/testData/"
 TOV_DATA_PATH = f"{BASE_PATH}/TOV_data/"
 TRAIN_PATH = f"{BASE_PATH}/trainData/"
@@ -206,9 +206,9 @@ class ParametricDMD:
             # U = U[:, sorted_indices]
             # Vt = Vt[sorted_indices, :]
             if (np.inf in U) or (np.inf in S) or (np.inf in Vt):
-                print("!! ! !!")
+                print("\n\n!! ! !!")
             if (np.nan in U) or (np.nan in S) or (np.nan in Vt):
-                print("! !!! !")
+                print("\n\n! !!! !")
 
             # Truncate to rank r
             self.r = min(self.svdSize, U.shape[1])
@@ -250,6 +250,7 @@ class ParametricDMD:
             self.bVals.append(b)
             self.AtildeVals.append(Atilde)
 
+        print(params)
         self.params = np.asarray(params, dtype=np.float64)
         self.LamrVals = np.array(self.LamrVals)
         self.UrVals = np.array(self.UrVals)
@@ -385,16 +386,31 @@ def main(tidal=False, mseos=False):
     if mseos:
         tov_data_path = f"{TOV_DATA_PATH}/MSEOS/"
     else:
+        print(f"{TOV_DATA_PATH}/Quarkies/")
         tov_data_path = f"{TOV_DATA_PATH}/Quarkies/"
 
     for file in os.listdir(tov_data_path):
         fileList.append(file)
 
+    # random.seed(48824)
+    # updatedFileList = random.sample(fileList, 10)
+    # updatedFileList = sorted(updatedFileList)
+    # testFileList = random.sample(fileList, 5)  # originally 10
+    # testFileList = sorted(testFileList)
+    # print(updatedFileList)
+    # print(testFileList)
+    
+    # make parameter space as according to `SLM/plot_code/SLM_parametric_eos_plot.ipynb`
     random.seed(48824)
-    updatedFileList = random.sample(fileList, 10)
-    updatedFileList = sorted(updatedFileList)
-    testFileList = random.sample(fileList, 5)  # originally 10
-    testFileList = sorted(testFileList)
+    fileList = sorted(fileList)
+    updatedFileList = [file for file in fileList[::3]]
+    testFileList = [file for file in fileList[::4] if file not in updatedFileList]
+    updatedFileList = updatedFileList[::4]
+    testFileList = testFileList[::4]
+    
+    print("")
+    print(updatedFileList)
+    print(testFileList)
 
     if not os.path.exists(TEST_DATA_PATH):
         os.makedirs(TEST_DATA_PATH)
@@ -405,7 +421,7 @@ def main(tidal=False, mseos=False):
             dmdFile = os.path.join(tov_data_path, file)
             os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
 
-    training = ParametricDMD(updatedFileList, tov_data_path, 10, tidal)  # 13
+    training = ParametricDMD(updatedFileList, tov_data_path, 12, tidal)  # 13
     training.fit()
 
     time_dict = {}
@@ -425,6 +441,9 @@ def main(tidal=False, mseos=False):
             print(f"plotted file: {name}")
             total_time = stoptime - starttime
             time_dict[file] = total_time
+            
+            # write the SLM data
+            np.savetxt("SLM_Quarkyonia_" + "_".join(testParam) + '.dat', np.exp(Xdmd.real.T))
 
     serializable_data = json.dumps(time_dict, sort_keys=True, indent=4)
 

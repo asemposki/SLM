@@ -141,7 +141,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
         os.makedirs(TOV_PATH)
 
     # Replace the filename and run the code
-    file = TOVsolver(eos_file, tidal=tidal)
+    file = TOVsolver(eos_file, tidal=tidal, solver="RK4")
     file.tov_routine(verbose=False, write_to_file=False)
     print("R of 1.4 solar mass star: ", file.canonical_NS_radius())
     dataArray = [
@@ -154,7 +154,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
         # dataArray.append(file.tidal_deformability.flatten()[::-1])
 
     dataArray = np.asarray(dataArray, dtype=np.float64)
-    name = (fileName.split(".")[0].split("_eos")[0])
+    name = (".".join(fileName.split(".")[:-1]).split("_eos")[0])
     file = "MR_" + name + ".dat"
     np.savetxt(TOV_PATH + file, dataArray.T, fmt="%1.8e")
     return dataArray
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     argv = sys.argv
     (fileName, svdSize, tidal, parametric, mseos) = argv[1:]
     nameList = fileName.strip(".dat").split("_")
-    name = "DMD_" + (fileName.split(".")[0].split("_eos")[0]) + ".dat"
+    name = "DMD_" + (".".join(fileName.split(".")[:-1]).split("_eos")[0]) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
     )
