@@ -1,7 +1,7 @@
 #######################################
 # TOV (High-Fidelity) Scaled Solver
 # Author: Alexandra C. Semposki
-# Last edited: 08 October 2024, by Sudhanva Lalit
+# Last edited: 5 May 2025, by Joshua Maldonado
 #######################################
 
 import os
