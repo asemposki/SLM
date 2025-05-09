@@ -1,7 +1,7 @@
 #######################################
 # TOV (High-Fidelity) Scaled Solver
 # Author: Alexandra C. Semposki
-# Last edited: 5 May 2025, by Joshua Maldonado
+# Last edited: 9 May 2025, by Joshua Maldonado
 #######################################
 
 import os
@@ -168,9 +168,7 @@ class TOVsolver:
     
     def RK2(self, f, x0, t0, te, N):
         r"""
-        A simple RK2 solver to avoid overhead of
-        calculating with solve_ivp or any other
-        adaptive step-size function.
+        A simple RK2 solver using the Heun's method.
         This is a low-fidelity solver.
 
         Example:
@@ -202,9 +200,9 @@ class TOVsolver:
 
         for t in times:
             solution.append(np.array(x).T)
-            k1 = h * f(t, x)
-            k2 = h * f(t + 0.5 * h, x + 0.5 * k1)
-            x += k2
+            k1 = f(t, x)
+            k2 = f(t + h, x + k1 * h)
+            x += h * (k1 + k2) * 0.5
 
         solution = np.asarray(solution, dtype=np.float64).T
 
@@ -543,7 +541,7 @@ class TOVsolver:
                 xval = sol.t
                 sol = sol.y
             else:
-                assert ValueError(f"Solver, {self.solver} unknown. Must be \"RK4\", \"RK2\" or \"euler\".")
+                assert ValueError(f"Solver, {self.solver} unknown. Must be \"RK4\", \"RK2\", \"euler\", or \"solve_ivp\".")
 
             # maximum mass
             index_mass = np.where([sol[0] > 1e-10])[1][-1]
@@ -744,25 +742,3 @@ class TOVsolver:
             fill_value="extrapolate",
         )
         return m_r_interp(1.4)
-
-
-def main():
-
-    filePath = os.getcwd().strip('src')
-    eosName = "sorted_Sly4.dat"
-    fileName = filePath + "/EOS_Data/" + eosName
-
-    print(filePath + '/EOS_Data/')
-
-    tov = TOVsolver(fileName, tidal=False)
-    start_time = time.time()
-    tov.tov_routine(verbose=True, write_to_file=False)
-    end_time = time.time()
-    print("Time: {} seconds".format(end_time - start_time))
-
-    print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
-
-    print('Central density: ', tov.central_dens())
-
-if __name__ == "__main__":
-    main()
