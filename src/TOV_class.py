@@ -1,7 +1,7 @@
 #######################################
 # TOV (High-Fidelity) Scaled Solver
 # Author: Alexandra C. Semposki
-# Last edited: 08 October 2024, by Sudhanva Lalit
+# Last edited: 5 May 2025, by Joshua Maldonado
 #######################################
 
 import os
@@ -9,13 +9,13 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-# from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
 
 class TOVsolver:
 
-    def __init__(self, eos_filepath=None, tidal=False):
+    def __init__(self, eos_filepath=None, tidal=False, solver="RK4", solve_ivp_kwargs=None, sol_pts=4000):
         r"""
         Class to calculate the Tolman-Oppenheimer-Volkoff equations,
         including options for the tidal deformability and moment of
@@ -42,6 +42,10 @@ class TOVsolver:
 
         # assign class variables
         self.tidal = tidal
+        self.solver = solver
+        self.sol_pts = sol_pts
+        self.solve_ivp_kwargs = solve_ivp_kwargs  # this is only used in solve_ivp
+        self.tol = 1e-9  # this is only used in solve_ivp
 
         # assign scaled variables
         self.eps0 = 1.285e3  # MeV fm-3
@@ -158,6 +162,90 @@ class TOVsolver:
             k4 = h * f(t + h, x + k3)
             x += (k1 + 2 * (k2 + k3) + k4) / 6
 
+        solution = np.asarray(solution, dtype=np.float64).T
+
+        return times, solution
+    
+    def RK2(self, f, x0, t0, te, N):
+        r"""
+        A simple RK2 solver using the Heun's method.
+        This is a low-fidelity solver.
+
+        Example:
+            tov.RK2(f=func, x0=1., t0=1., te=10., N=100)
+
+        Parameters:
+            f (func): A Python function for the ODE(s) to be solved.
+                Able to solve N coupled ODEs.
+
+            x0 (float): Guess for the function(s) to be solved.
+
+            t0 (float): Initial point of the grid.
+
+            te (float): End point of the grid.
+
+            N (int): The number of steps to take in the range (te-t0).
+
+        Returns:
+            times (array): The grid of solution steps.
+
+            solution (array): The solutions of each function
+                at each point in the grid.
+        """
+        
+        h = (te - t0) / N
+        times = np.arange(t0, te + h, h)
+        solution = []
+        x = x0
+
+        for t in times:
+            solution.append(np.array(x).T)
+            k1 = f(t, x)
+            k2 = f(t + h, x + k1 * h)
+            x += h * (k1 + k2) * 0.5
+
+        solution = np.asarray(solution, dtype=np.float64).T
+
+        return times, solution
+    
+    def euler(self, f, x0, t0, te, N):
+        r"""
+        A simple forward euler solver to avoid overhead of
+        calculating with solve_ivp or any other
+        adaptive step-size function.
+        This is a low fidelity solver!
+
+        Example:
+            tov.euler(f=func, x0=1., t0=1., te=10., N=100)
+
+        Parameters:
+            f (func): A Python function for the ODE(s) to be solved.
+                Able to solve N coupled ODEs.
+
+            x0 (float): Guess for the function(s) to be solved.
+
+            t0 (float): Initial point of the grid.
+
+            te (float): End point of the grid.
+
+            N (int): The number of steps to take in the range (te-t0).
+
+        Returns:
+            times (array): The grid of solution steps.
+
+            solution (array): The solutions of each function
+                at each point in the grid.
+        """
+        
+        h = (te - t0) / N
+        times = np.arange(t0, te + h, h)
+        solution = []
+        x = x0
+
+        for t in times:
+            solution.append(np.array(x).T)
+            x += h * f(t, x)
+            
         solution = np.asarray(solution, dtype=np.float64).T
 
         return times, solution
@@ -413,7 +501,47 @@ class TOVsolver:
                 init_guess.append(y_arg)
 
             # Improve init_guess as one entry for all solutions
-            xval, sol = self.RK4(self.tov_equations_scaled, init_guess, 1e-3, 4.0, 2500)
+            # high fidelity (four function evals per sol_pt)
+            if self.solver == "RK4":
+                xval, sol = self.RK4(self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts)
+            
+            # low fidelity (two function evals per sol_pt)
+            elif self.solver == "RK2":
+                xval, sol = self.RK2(self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts)
+            
+            # low fidelity (one function eval per sol_pt)
+            elif self.solver == "euler":
+                xval, sol = self.euler(self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts)
+            
+            # adaptive (typically high fidelity)
+            elif self.solver == "solve_ivp":
+                if self.solve_ivp_kwargs is None:
+                    self.solve_ivp_kwargs = {"method": "RK45",
+                                             "atol": 5e-14,
+                                             "rtol": self.tol,
+                                             "max_step": 0.01,
+                                             "dense_output": True}
+                if self.tidal is True:
+                    sol = solve_ivp(
+                        self.tov_equations_scaled,
+                        [1e-3, 2.5],
+                        [pres_arg, mass_arg, y_arg],
+                        **self.solve_ivp_kwargs
+                    )
+                else:
+                    sol = solve_ivp(
+                        self.tov_equations_scaled,
+                        [1e-8, 2.5],
+                        [pres_arg, mass_arg],
+                        **self.solve_ivp_kwargs
+                    )
+                if not sol.success:
+                    print("Solver failed.")
+                    print(sol.message)
+                xval = sol.t
+                sol = sol.y
+            else:
+                assert ValueError(f"Solver, {self.solver} unknown. Must be \"RK4\", \"RK2\", \"euler\", or \"solve_ivp\".")
 
             # maximum mass
             index_mass = np.where([sol[0] > 1e-10])[1][-1]
