@@ -25,8 +25,10 @@ TRAIN_PATH = f"{base_PATH}/trainData/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 20)  # 20
-kappaVal = np.linspace(0.1, 0.3, 10)  # 10
+# lamVal = np.linspace(300, 500, 20)  # 20
+# kappaVal = np.linspace(0.1, 0.3, 10)  # 10
+lamVal = [300.00]
+kappaVal = [0.10]
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)

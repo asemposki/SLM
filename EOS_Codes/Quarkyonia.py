@@ -35,7 +35,7 @@ def eps(k, m):
 def main(kap, lamInput):
     lam = lamInput / hc
     kfmin = 0.25
-    kfmax = 10.0  # was = 5.0
+    kfmax = 5.0  # was = 5.0
     kArray = np.linspace(kfmin, kfmax, 100)
     # Initialize arrays
     epst = np.zeros(len(kArray))

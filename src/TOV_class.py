@@ -594,6 +594,20 @@ class TOVsolver:
             # "Tidal deformability at all points: {}".format(self.tidal_deformability)
             # )
             # print("k2 at all points: {}".format(self.k2))
+        
+        print("\n\n")
+        print("radius")
+        print(list(max_radius))
+        print("")
+        print("mass")
+        print(list(max_mass))
+        print("")
+        print("pressure")
+        print(list(pres_central))
+        print("")
+        print("k2")
+        print(list(self.k2))
+        print("\n\n")
 
         if verbose is True:
             print("Max mass array: ", max_mass)
