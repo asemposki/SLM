@@ -1,7 +1,7 @@
 #######################################
 # TOV (High-Fidelity) Scaled Solver
 # Author: Alexandra C. Semposki
-# Last edited: 9 May 2025, by Joshua Maldonado
+# Last edited: 5 May 2025, by Joshua Maldonado
 #######################################
 
 import os
@@ -742,3 +742,25 @@ class TOVsolver:
             fill_value="extrapolate",
         )
         return m_r_interp(1.4)
+
+
+def main():
+
+    filePath = os.getcwd().strip('src')
+    eosName = "sorted_Sly4.dat"
+    fileName = filePath + "/EOS_Data/" + eosName
+
+    print(filePath + '/EOS_Data/')
+
+    tov = TOVsolver(fileName, tidal=False)
+    start_time = time.time()
+    tov.tov_routine(verbose=True, write_to_file=False)
+    end_time = time.time()
+    print("Time: {} seconds".format(end_time - start_time))
+
+    print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
+
+    print('Central density: ', tov.central_dens())
+
+if __name__ == "__main__":
+    main()
