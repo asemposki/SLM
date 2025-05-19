@@ -15,20 +15,21 @@ import time
 base_PATH = os.path.join(os.path.dirname(__file__), "..")
 src_PATH = f"{base_PATH}/src/"
 EOS_FILES_PATH = f"{base_PATH}/EOS_files/"
-RESULTS_PATH = f"{base_PATH}/Results"
+RESULTS_PATH = f"{base_PATH}/Results/Quarkies/"
 EOS_CODE_PATH = f"{base_PATH}/EOS_Codes/"
 MR_PATH = f"{base_PATH}/TOV_data"
 Quarkies_PATH = f"{base_PATH}/EOS_files/Quarkies/"
 MSEOS_PATH = f"{base_PATH}/EOS_files/MSEOS/"
 PLOTS_PATH = f"{base_PATH}/Plots/"
-TRAIN_PATH = f"{base_PATH}/trainData/"
+TRAIN_PATH = f"{base_PATH}/trainData/Quarkies/"
 
 
 # set parameters for lambda and kappa
-# lamVal = np.linspace(300, 500, 20)  # 20
-# kappaVal = np.linspace(0.1, 0.3, 10)  # 10
-lamVal = [300.00]
-kappaVal = [0.10]
+lamVal = np.linspace(300, 500, 4)[1:]  # 20
+kappaVal = np.linspace(0.1, 0.3, 3)  # 10
+# lamVal = [433.33]
+# lamVal = [500.00]
+# kappaVal = [0.30]
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)
@@ -96,7 +97,7 @@ def main(parametric=False, tidal=False, mseos=False):
             svdSize = 14
         else:
             EOS_PATH = Quarkies_PATH
-            svdSize = 14
+            svdSize = 12
         eval_parametric(svdSize, EOS_PATH, tidal, mseos)
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"

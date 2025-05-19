@@ -75,12 +75,16 @@ def DMD(X, dt):
 
     # Compute SVD of X1
     U, S, Vt = np.linalg.svd(X1, full_matrices=False)
+    print("S = ", S)
     # print(U.shape)
     
     # Truncate to rank r
+    """To try:
+            - looking at eigenvectors for clues
+    """
     time_initial = time.time()
     r_best = 0
-    smallest_total_distance = 100.  # some large number for initialization
+    smallest_total_distance = 0
     for r in np.arange(1, U.shape[1] + 1):
         print(r)
         U_r = U[:, :r]
@@ -89,19 +93,27 @@ def DMD(X, dt):
         
         # Compute Atilde
         Atilde = U_r.T @ X2 @ V_r.T @ np.linalg.inv(S_r)
-
+        
         # Compute eigenvectors and eigenvalues
         D, W_r = np.linalg.eig(Atilde)
         
-        D_total = np.mean(np.abs(D))
+        D_total = np.sum(np.abs(D.imag)) / 2
         print(f"D distance = {D_total:.6}")
         
-        if D_total < smallest_total_distance:
+        if D_total >= smallest_total_distance:
             r_best = r
             smallest_total_distance = D_total
-            print(f"shortest D distance = {smallest_total_distance:.6}")
+        print(f"largest D distance = {smallest_total_distance:.6}")
         print(r_best)
         print("")
+        
+        from matplotlib import pyplot as plt
+        plt.plot(W_r.real, color="blue")
+        plt.plot(W_r.imag, color="orange")
+        plt.show()
+        
+        plot_eigs(D, filename="eigenValues.pdf")
+        plt.show()
         #
     time_final = time.time()
     print(f"eigenvalue search took {time_final - time_initial:.3e} seconds.")

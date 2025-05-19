@@ -2,7 +2,7 @@
 Quarkonia EOS using Mclaren-Reddy Paper
 Author: Sudhanva Lalit
 Started: 09/14/2024
-Latest Update: 05/16/2025 (by Joshua Maldonado)
+Latest Update: 09/14/2024
 """
 
 import numpy as np
@@ -12,7 +12,7 @@ from scipy.interpolate import CubicSpline
 
 # Constants
 pi2 = np.pi**2
-Nc = 2.0
+Nc = 3.0
 hc = 197.33
 hc2 = hc**2
 mnmev = 939
@@ -21,8 +21,6 @@ mnmev = 939
 n0 = 0.16
 a = -28.8
 b = 10.0
-# a = -28.6
-# b = 9.9
 mn = mnmev / hc  # Nucleon mass in MeV
 
 
@@ -56,7 +54,7 @@ def main(kap, lamInput):
         ll = Nc * kfq  # lower limit
         ul = kfb  # upper limit
         nn = (ul**3 - ll**3) / (3 * pi2)  # neutron number density
-        u = nn / n0  # number density saturation ratio
+        u = nn / n0  # number density saturation ratio (?)
         vn = (a * u + b * u**2) * nn  # energy density due to interactions
         Eul = eps(ul, mn)  # upper limit on epsilon
         Ell = eps(ll, mn)  # lower limit on epsilon
@@ -95,9 +93,12 @@ def main(kap, lamInput):
         # print(f"nb: {nb}, nn/nb: {nn/nb}, nq/nb: {nq/nb}, nu: {nu}, nd: {nd}")
 
     interpErho = CubicSpline(nbq, epst)
+    
     indices = np.where(nbq > 0.08)
     nbq = nbq[indices]
+    nbq = np.arange(0.085, max(nbq), 0.005)
     epst = epst[indices]
+    epst = interpErho(nbq)
 
     press = -epst + interpErho(nbq, 1) * nbq
     interpPrho = CubicSpline(nbq, press)
@@ -114,6 +115,7 @@ def main(kap, lamInput):
     pLowDer = CubicSpline(nbLow, pLow).derivative()
     cs2Low = pLowDer(nbLow) / eLowDer(nbLow)
 
+    
     # Combine the two parts
     nbq = np.concatenate((nbLow, nbq))
     epst = np.concatenate((eLow, epst))

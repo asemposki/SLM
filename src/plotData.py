@@ -245,6 +245,9 @@ def plot_dmd_rad(X, Xdmd, fileNames, ylabels, fileName=None):
         fig, ax = plt.subplots(figsize=(8, 6), dpi=600)
         ax.plot(np.exp(Xdmd[0].real), np.exp(Xdmd[i + 1].real), label="DMD")
         ax.plot(np.exp(X[0]), np.exp(X[i + 1]), ".", label="data")
+        
+        # ax.set_xlim(0.9 * min(np.exp(X[0])), 1.1 * max(np.exp(X[0])))
+        # ax.set_ylim(0.9 * min(np.exp(X[i + 1])), 1.1 * max(np.exp(X[i + 1])))
 
         ax.set_xlabel(r"Radius [km]", fontsize=22)
         ax.set_ylabel(ylabels[i], fontsize=22)

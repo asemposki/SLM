@@ -168,9 +168,7 @@ class TOVsolver:
     
     def RK2(self, f, x0, t0, te, N):
         r"""
-        A simple RK2 solver to avoid overhead of
-        calculating with solve_ivp or any other
-        adaptive step-size function.
+        A simple RK2 solver using the Heun's method.
         This is a low-fidelity solver.
 
         Example:
@@ -202,9 +200,9 @@ class TOVsolver:
 
         for t in times:
             solution.append(np.array(x).T)
-            k1 = h * f(t, x)
-            k2 = h * f(t + 0.5 * h, x + 0.5 * k1)
-            x += k2
+            k1 = f(t, x)
+            k2 = f(t + h, x + k1 * h)
+            x += h * (k1 + k2) * 0.5
 
         solution = np.asarray(solution, dtype=np.float64).T
 
@@ -359,9 +357,9 @@ class TOVsolver:
         """
         pre = (3.0 / 2.0) * x**2.0 / (1.0 - mass / x)
         one = 5.0 * eps + 9.0 * pres + ((eps + pres) / cs2) - (4.0 / x**2.0)
-        two = (mass / x) + 3.0 * x**2.0 * pres
+        two = (mass / x) + 3.0 / 2.0 * x**2.0 * pres
         three = 1.0 - mass / x
-        return pre * one - (two / three) ** 2.0
+        return pre * one - 4 * (two / three) ** 2.0
 
     # love number equations and tidal deformability
     def tidal_def(self, yR, mass, radius):
@@ -447,29 +445,35 @@ class TOVsolver:
         """
 
         # initial pressure
-        pres_init = min(2.0, max(self.pres_array))
+        # pres_init = min(2.0, max(self.pres_array))
+        # pres_init = max(0.5, max(self.pres_array))  # was 0.7
+        pres_init = max(0.5, max(self.pres_array) * 0.6)
+        print(f"pres_init = {pres_init:.4}")
+        # pres_init = 1.3
         mass_init = 0.0
 
         if self.tidal is True:
-            y_init = 2.0
+            # y_init = 2.0
+            y_init = 1.5
 
         # set initial radius array
         low_pres = max(1e-3, min(self.pres_array))
-        x = np.geomspace(1e-8, 2.5, 50)
-        pres_space = np.geomspace(low_pres, pres_init, len(x))
+        iter_pts = 50
+        pres_space = np.geomspace(low_pres, pres_init, iter_pts)
+        self.pvals = pres_space
 
         if self.tidal is True:
-            self.yR = np.zeros(len(x))
+            self.yR = np.zeros(iter_pts)
 
         # set up arrays for the final results
-        self.total_mass = np.zeros(len(x))
-        self.total_radius = np.zeros(len(x))
-        self.total_pres_central = np.zeros(len(x))
+        self.total_mass = np.zeros(iter_pts)
+        self.total_radius = np.zeros(iter_pts)
+        self.total_pres_central = np.zeros(iter_pts)
 
         # set up arrays (impermanent so this will work)
-        max_mass = np.zeros(len(x))
-        pres_central = np.zeros(len(x))
-        max_radius = np.zeros(len(x))
+        max_mass = np.zeros(iter_pts)
+        pres_central = np.zeros(iter_pts)
+        max_radius = np.zeros(iter_pts)
 
         # interpolate the energy density
         self.eps_interp = interp1d(
@@ -489,8 +493,10 @@ class TOVsolver:
                 fill_value="extrapolate",
             )
 
+        # storing values for all pressures to plot in `testTOV.ipynb`
+        self.sols = []
         # loop over the TOV equations
-        for i in range(len(x)):
+        for i in range(iter_pts):
             init_guess = []
             # initial conditions
             mass_arg = mass_init
@@ -543,7 +549,7 @@ class TOVsolver:
                 xval = sol.t
                 sol = sol.y
             else:
-                assert ValueError(f"Solver, {self.solver} unknown. Must be \"RK4\", \"RK2\" or \"euler\".")
+                assert ValueError(f"Solver, {self.solver} unknown. Must be \"RK4\", \"RK2\", \"euler\", or \"solve_ivp\".")
 
             # maximum mass
             index_mass = np.where([sol[0] > 1e-10])[1][-1]
@@ -557,6 +563,10 @@ class TOVsolver:
 
             if self.tidal is True:
                 self.yR[i] = sol[2][index_mass]
+            self.sols.append([xval[:index_mass],
+                              sol[0][:index_mass],
+                              sol[1][:index_mass],
+                              sol[2][:index_mass] if self.tidal else None])
 
         # scale results (send back totals at the end using these)
         max_mass = max_mass * self.mass0
@@ -578,11 +588,11 @@ class TOVsolver:
 
         print(
             "Max mass: ",
-            self.maximum_mass,
+            np.round(self.maximum_mass, 6),
             "Radius: ",
-            self.corr_radius,
+            np.round(self.corr_radius, 6),
             "Central pressure: ",
-            self.corr_pres,
+            np.round(self.corr_pres, 6),
         )
 
         # tidal deformability
@@ -594,20 +604,6 @@ class TOVsolver:
             # "Tidal deformability at all points: {}".format(self.tidal_deformability)
             # )
             # print("k2 at all points: {}".format(self.k2))
-        
-        print("\n\n")
-        print("radius")
-        print(list(max_radius))
-        print("")
-        print("mass")
-        print(list(max_mass))
-        print("")
-        print("pressure")
-        print(list(pres_central))
-        print("")
-        print("k2")
-        print(list(self.k2))
-        print("\n\n")
 
         if verbose is True:
             print("Max mass array: ", max_mass)
