@@ -3,11 +3,14 @@ on:
   push:
     branches:
       - main
-permissions:
-  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -23,6 +26,5 @@ jobs:
       - run: pip install mkdocs-material
       - run: pip install mkdocstrings-python
       - run: pip install mkdocs-jupyter
-      - run: pip install -r requirements.txt
-      - run: pip install -e .
+      - run: pip install numpy seaborn scikit-learn matplotlib scipy
       - run: mkdocs gh-deploy --force
