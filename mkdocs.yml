@@ -48,26 +48,12 @@ plugins:
       python:
         setup_commands:
           - import sys
-#           - sys.path.append("samba")
       rendering:
         show_source: true
-# watch:
-# - samba
 
 nav:
   - index.md
   - test.md
-  # - Documentation:
-    # - models.md
-    # - mixing.md
-    # - discrepancy.md
-    # - gaussianprocess.md
-    # - fprdat.md
-    # - priors.md
-  # - Tutorials:
-  #   - Tutorials/LMM.ipynb
-  #   - Tutorials/Bivariate_BMM.ipynb
-  #   - Tutorials/GP_BMM.ipynb
 
 repo_url: https://github.com/asemposki/SLM
 
