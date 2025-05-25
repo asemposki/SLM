@@ -1,37 +1,65 @@
-name: ci
+# .github/workflows/ci.yml # Changed name from deploy-docs to ci to match your file
+
+name: CI
+
 on:
   push:
     branches:
-      - main
+      - main # This will trigger on direct pushes AND PR merges to main
+
   pull_request:
     branches:
-      - main
+      - main # Only run for PRs targeting 'main'
     types:
       - closed # Trigger when the PR is closed (includes merged state)
+
+# Grant necessary permissions for the GITHUB_TOKEN
 permissions:
-  contents: write
+  contents: write # Allows pushing to gh-pages branch
+  pages: write # Allows managing GitHub Pages deployments
+  id-token: write # Required for OIDC, often used with Pages
 
 jobs:
   deploy:
-    # Only run this job if the pull request was merged
-    if: github.event.pull_request.merged == true
+    # This condition ensures the job runs either:
+    # 1. On a 'push' event to 'main' (which includes merges).
+    # 2. On a 'pull_request' 'closed' event, ONLY IF that PR was merged.
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for git-based MkDocs features
+
+      - name: Set up Python
+        uses: actions/setup-python@v5 # Changed to v5 for latest features/bug fixes
         with:
           python-version: 3.x
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v3
+          cache: "pip" # Cache pip dependencies
+
+      - name: Cache MkDocs build artifacts
+        # Using a fixed key is often better for a stable cache unless you frequently
+        # update MkDocs Material. `date --utc '+%V'` is for week number, which changes weekly.
+        # This cache helps speed up builds, but is not critical for deployment.
+        id: cache-mkdocs-material
+        uses: actions/cache@v4 # Changed to v4
         with:
-          key: mkdocs-material-${{ env.cache_id }}
+          key: mkdocs-material-${{ hashFiles('requirements.txt') }} # Key based on requirements.txt hash
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material
-      - run: pip install mkdocstrings-python
-      - run: pip install mkdocs-jupyter
-      - run: pip install -r requirements.txt
-      - run: pip install -e .
-      - run: mkdocs gh-deploy --force
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Install all dependencies from requirements.txt
+          pip install -r requirements.txt
+          # Install your Python package itself in editable mode.
+          # This is crucial for mkdocstrings to find your modules.
+          pip install -e .
+
+      - name: Build and deploy MkDocs
+        run: mkdocs gh-deploy --force --clean
