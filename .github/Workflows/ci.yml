@@ -9,9 +9,9 @@ on:
 
   pull_request:
     branches:
-      - main # Only run for PRs targeting 'main'
+      - main
     types:
-      - closed # Trigger when the PR is closed (includes merged state)
+      - closed
 
 # Grant necessary permissions for the GITHUB_TOKEN
 permissions:
