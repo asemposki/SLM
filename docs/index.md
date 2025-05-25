@@ -4,26 +4,14 @@ Welcome to our documentation webpage for the Star Log-extended eMulator (SLM) pa
 
 **Star Log-extended eMulator (SLM)** is an emulator that is based on dynamic mode decomposition method.
 
-## Contents
+This is the official documentation for `slm`.
 
-.. toctree::
+You can find information on:
 
-    source/usage
-    source/api
-    source/miscellaneous
+- [Installation](installation.md)
+- [Usage Examples](usage.md)
+- [API Reference](api.md)
 
-## Complement
+## About My Package
 
-.. toctree::
-:maxdepth: 2
-:caption: Contents:
-
-    source/api/tov
-    source/api/slm
-    source/api/pslm
-
-## Indices and tables
-
-- :ref:`genindex`
-- :ref:`modindex`
-- :ref:`search`
+Star Log-extended eMulator (SLM) is a log-extended emulator based off of DMD.
