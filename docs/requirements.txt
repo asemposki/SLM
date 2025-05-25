@@ -3,7 +3,6 @@ scipy
 matplotlib
 pandas
 pytest
-sphinx
-sphinx_rtd_theme
-recommonmark
-myst-nb
+mkdocs
+mkdocs-material
+mkdocstrings[python]

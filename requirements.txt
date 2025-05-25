@@ -1,9 +1,8 @@
-numpy >= 1.21.5
+numpy
 matplotlib
 scipy
-time
 statistics
-mkdocstrings>=1.6.0
+mkdocstrings
 mkdocstrings-python>=1.1.2
 mkdocs-material>=9.1.18
 mkdocs-jupyter>=0.24.2
