@@ -1,4 +1,4 @@
-# .github/workflows/ci.yml # Changed name from deploy-docs to ci to match your file
+# .github/workflows/ci.yml
 
 name: CI
 
@@ -21,9 +21,6 @@ permissions:
 
 jobs:
   deploy:
-    # This condition ensures the job runs either:
-    # 1. On a 'push' event to 'main' (which includes merges).
-    # 2. On a 'pull_request' 'closed' event, ONLY IF that PR was merged.
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
     runs-on: ubuntu-latest
