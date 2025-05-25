@@ -1,7 +1,8 @@
-"""Script to evaluate DMDs for the TOV equations
-Author: Sudhanva Lalit
-Last edited: 23 September 2024
-"""
+###########################################
+# Parametric SLM code for TOV data
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+###########################################
 
 import numpy as np
 import os
@@ -9,16 +10,30 @@ import sys
 import time
 from scipy.spatial import distance
 import json
+import shutil
 from itertools import combinations_with_replacement
 from sklearn.neighbors import NearestNeighbors
 import random
-from plotData import plot_parametric, plot_eigs
+from plotData import plot_parametric
 
-BASE_PATH = os.path.join(os.path.dirname(__file__), "..")
-DMD_DATA_PATH = f"{BASE_PATH}/Results/"
-TEST_DATA_PATH = f"{BASE_PATH}/testData/"
-TOV_DATA_PATH = f"{BASE_PATH}/TOV_data/"
-TRAIN_PATH = f"{BASE_PATH}/trainData/"
+# Ensure that the parent directory (project root) is in sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+from src import (
+    SRC_DIR,
+    TEST_DATA_PATH,
+    TRAIN_PATH,
+    EOS_DATA_DIR,
+    EOS_FILES_DIR,
+    RESULTS_PATH,
+    TOV_PATH,
+    PLOTS_PATH,
+    MSEOS_PATH,
+    QEOS_PATH,
+    QEOS_TOV_PATH,
+    MSEOS_TOV_PATH,
+)
 
 # Interpolation using banach grim
 
@@ -44,7 +59,7 @@ colors = [
 ]
 
 
-class ParametricDMD:
+class ParametricSLM:
 
     def __init__(self, fileList, filePath, svdSize, tidal=False) -> None:
         self.fileList = fileList
@@ -62,12 +77,15 @@ class ParametricDMD:
 
     @staticmethod
     def complex_encoder(obj):
+        r"""
+        Encode complex numbers as dictionaries for JSON serialization.
+        """
         if isinstance(obj, complex):
             return {"__complex__": True, "real": obj.real, "imag": obj.imag}
         raise TypeError("Type not serializable")
 
     def sort_and_fix_eigenpairs(self, eigenvalues, eigenvectors):
-        """
+        r"""
         Sort eigenvalues and corresponding eigenvectors, and fix the sign of eigenvectors for consistency.
 
         Parameters:
@@ -91,7 +109,7 @@ class ParametricDMD:
         return sorted_eigenvalues, sorted_eigenvectors
 
     def consistent_eigen(self, matrix):
-        """
+        r"""
         Compute consistent eigenvalues and eigenvectors for a given matrix.
 
         Parameters:
@@ -112,11 +130,117 @@ class ParametricDMD:
         return sorted_eigenvalues, sorted_eigenvectors
 
     # Function for the Banach GRIM interpolation algorithm
+    # def banach_grim_data(
+    #     self, x0, y, x_data, tol=1e-8, max_iter=100, extrapolate=False
+    # ):
+    #     r"""
+    #     Perform Banach GRIM interpolation for multidimensional data.
+
+    #     Parameters:
+    #     x0 (array-like): Initial guess (2D array) for the input.
+    #     y (array-like): Target values (output data points).
+    #     x_data (array-like): Input data points corresponding to the output.
+    #     tol (float): Tolerance level to achieve.
+    #     max_iter (int): Maximum number of iterations.
+
+    #     Returns:
+    #     y_interp (float): Interpolated output value for input `x0`.
+    #     """
+    #     x = np.array(x0)
+    #     for i in range(max_iter):
+    #         # Find the nearest neighbors in the dataset based on distance
+    #         distances = distance.cdist([x], x_data, metric="euclidean")
+    #         nearest_idx = np.argmin(distances)
+
+    #         # Interpolation step: adjust based on the closest point
+    #         y_closest = y[nearest_idx]
+    #         x_new = x_data[nearest_idx]
+
+    #         if np.linalg.norm(x_new - x) < tol:
+    #             print(f"Converged after {i+1} iterations.")
+    #             return y_closest
+
+    #         # Update the point to the closest one for the next iteration
+    #         x = x_new
+
+    #     print("Did not converge within the maximum number of iterations.")
+    #     return y_closest
+
+    # def banach_grim_data(
+    #     self,
+    #     x0,
+    #     y,
+    #     x_data,
+    #     tol=1e-8,
+    #     max_iter=100,
+    #     num_neighbors=5,
+    #     reg=1e-5,
+    #     sigma=1.0,
+    # ):
+    #     r"""
+    #     Perform Banach GRIM interpolation for multidimensional data with refinements.
+
+    #     Parameters:
+    #     x0 (array-like): Initial guess (2D array) for the input.
+    #     y (array-like): Target values (output data points).
+    #     x_data (array-like): Input data points corresponding to the output.
+    #     tol (float): Tolerance level to achieve.
+    #     max_iter (int): Maximum number of iterations.
+    #     num_neighbors (int): Number of nearest neighbors to consider for interpolation.
+    #     reg (float): Regularization parameter to stabilize interpolation.
+    #     sigma (float): Scale parameter for Gaussian weighting.
+
+    #     Returns:
+    #     y_interp (float): Interpolated output value for input `x0`.
+    #     """
+    #     x = np.array(x0)
+    #     for i in range(max_iter):
+    #         # Find distances to all points in x_data
+    #         distances = distance.cdist([x], x_data, metric="euclidean").flatten()
+
+    #         # Select the indices of the closest neighbors
+    #         nearest_indices = np.argsort(distances)[:num_neighbors]
+    #         nearest_distances = distances[nearest_indices]
+    #         nearest_y = y[nearest_indices]
+    #         nearest_x = x_data[nearest_indices]
+
+    #         # Apply Gaussian weighting based on distances
+    #         weights = np.exp(-(nearest_distances**2) / (2 * sigma**2)) + reg
+    #         weights /= np.sum(weights)  # Normalize weights
+
+    #         # Ensure weights have the correct shape for broadcasting
+    #         weights = weights[:, np.newaxis]  # Reshape to (num_neighbors, 1)
+
+    #         # Interpolated y value
+    #         y_interp = np.sum(weights * nearest_y, axis=0)
+
+    #         # Refine the x point based on weighted interpolation of neighbors
+    #         x_new = np.sum(weights * nearest_x, axis=0)
+
+    #         # Check for convergence
+    #         if np.linalg.norm(x_new - x) < tol:
+    #             print(f"Converged after {i+1} iterations.")
+    #             return y_interp
+
+    #         # Update x for the next iteration
+    #         x = x_new
+
+    #     print("Did not converge within the maximum number of iterations.")
+    #     return y_interp
     def banach_grim_data(
-        self, x0, y, x_data, tol=1e-8, max_iter=100, extrapolate=False
+        self,
+        x0,
+        y,
+        x_data,
+        tol=1e-8,
+        max_iter=100,
+        num_neighbors=5,
+        reg=1e-5,
+        sigma=1.0,
+        max_basis_size=10,
     ):
-        """
-        Perform Banach GRIM interpolation for multidimensional data.
+        r"""
+        Perform Banach GRIM interpolation for multidimensional data with refinements.
 
         Parameters:
         x0 (array-like): Initial guess (2D array) for the input.
@@ -124,32 +248,56 @@ class ParametricDMD:
         x_data (array-like): Input data points corresponding to the output.
         tol (float): Tolerance level to achieve.
         max_iter (int): Maximum number of iterations.
+        num_neighbors (int): Number of nearest neighbors to consider for interpolation.
+        reg (float): Regularization parameter to stabilize interpolation.
+        sigma (float): Scale parameter for Gaussian weighting.
+        max_basis_size (int): Maximum size of the basis pool for interpolation.
 
         Returns:
         y_interp (float): Interpolated output value for input `x0`.
         """
         x = np.array(x0)
+
         for i in range(max_iter):
-            # Find the nearest neighbors in the dataset based on distance
-            distances = distance.cdist([x], x_data, metric="euclidean")
-            nearest_idx = np.argmin(distances)
+            # Compute distances to all points in x_data
+            distances = distance.cdist([x], x_data, metric="euclidean").flatten()
 
-            # Interpolation step: adjust based on the closest point
-            y_closest = y[nearest_idx]
-            x_new = x_data[nearest_idx]
+            # Dynamically adjust the number of neighbors based on the iteration
+            neighbors = min(num_neighbors + i, max_basis_size)
 
-            if np.linalg.norm(x_new - x) < tol:
-                print(f"Converged after {i+1} iterations.")
-                return y_closest
+            # Select the indices of the closest neighbors
+            nearest_indices = np.argsort(distances)[:neighbors]
+            nearest_distances = distances[nearest_indices]
+            nearest_y = y[nearest_indices]
+            nearest_x = x_data[nearest_indices]
 
-            # Update the point to the closest one for the next iteration
+            # Compute Gaussian weights with regularization
+            weights = np.exp(-(nearest_distances**2) / (2 * sigma**2)) + reg
+            weights /= np.sum(weights)  # Normalize weights
+
+            # Ensure weights have the correct shape for broadcasting
+            weights = weights[:, np.newaxis]
+
+            # Interpolated y value
+            y_interp = np.sum(weights * nearest_y, axis=0)
+
+            # Refine the x point based on weighted interpolation of neighbors
+            x_new = np.sum(weights * nearest_x, axis=0)
+
+            # Compute error (norm difference between current and new point)
+            error = np.linalg.norm(x_new - x)
+
+            # Check for convergence
+            if error < tol:
+                return y_interp
+
+            # Update x for the next iteration
             x = x_new
 
-        print("Did not converge within the maximum number of iterations.")
-        return y_closest
+        return y_interp
 
     def augment_data_multiple_columns(self, X):
-        """
+        r"""
         Augment the data matrix X with nonlinear terms for multiple variables.
 
         Parameters:
@@ -175,6 +323,9 @@ class ParametricDMD:
 
     # Numpy based Reduced eigen-pair interpolation
     def fit(self):
+        r"""
+        Fit the data using the parametric SLM algorithm.
+        """
         params = []
 
         # Read data from the dmd files in dmdRes
@@ -182,7 +333,7 @@ class ParametricDMD:
             print(f"fileName = {file}")
             nameList = file.strip("MR.dat").split("_")
             params.append(nameList[2:])
-            data = np.loadtxt(self.filePath + file).T
+            data = np.loadtxt(self.filePath + "/" + file).T
             print("Data", data.shape)
             self.t = np.arange(len(data.T[0]))
             self.dt = (self.t[-1] - self.t[0]) / len(self.t)
@@ -201,14 +352,6 @@ class ParametricDMD:
 
             # Compute SVD of X1
             U, S, Vt = np.linalg.svd(X1, full_matrices=False)
-            # sorted_indices = np.argsort(-S)
-            # S = S[sorted_indices]
-            # U = U[:, sorted_indices]
-            # Vt = Vt[sorted_indices, :]
-            if (np.inf in U) or (np.inf in S) or (np.inf in Vt):
-                print("!! ! !!")
-            if (np.nan in U) or (np.nan in S) or (np.nan in Vt):
-                print("! !!! !")
 
             # Truncate to rank r
             self.r = min(self.svdSize, U.shape[1])
@@ -219,27 +362,17 @@ class ParametricDMD:
             # Compute Atilde
             Atilde = U_r.T @ X2 @ V_r.T @ np.linalg.inv(S_r)
 
-            if np.inf in Atilde:
-                print("\n" * 5)
-                print("inf issue !!!")
-            if np.nan in Atilde:
-                print("\n" * 5)
-                print("nan issue !!!")
-
             # Compute eigenvectors and eigenvalues
             # D, W_r = np.linalg.eig(Atilde)
             D, W_r = self.consistent_eigen(Atilde)
-            # print("D", W_r)
 
             Phi = X2 @ V_r.T @ np.linalg.inv(S_r) @ W_r  # DMD modes
             # Phi = U_r @ W_r
 
             # Compute DMD mode amplitudes b
             x1 = X1[:, 0]
-            # print("Shapes", Phi, "\n", x1)
             # b = np.linalg.lstsq(Phi, x1, rcond=None)[0]
             b = self.regularized_lstsq(Phi, x1, alpha=1e-8)
-            print("b", b)
             # b, residuals, rank, s = lstsq(Phi, x1)
 
             self.LamrVals.append(D)
@@ -288,6 +421,9 @@ class ParametricDMD:
             f.write(serializable_data)
 
     def predict(self, theta):
+        r"""
+        Predict the output for a given input parameter theta.
+        """
         # Compute phi
         theta = np.asarray([theta], dtype=np.float64)[0]
         print("theta:", theta, theta.shape)
@@ -295,6 +431,7 @@ class ParametricDMD:
         # Interpolate lambda
         lambda_real = self.banach_grim_data(theta, self.LamrVals.real, self.params)
         lambda_imag = self.banach_grim_data(theta, self.LamrVals.imag, self.params)
+        print("lambda_real:", lambda_real)
         lambda_vals = lambda_real + 1j * lambda_imag
         print("lambda:", lambda_vals)
 
@@ -345,7 +482,7 @@ class ParametricDMD:
         return Phi, omega, lambda_vals, bVals, Xdmd, t
 
     def regularized_lstsq(self, A, B, alpha=1e-8):
-        """
+        r"""
         Solve the least squares problem with regularization (Ridge regression).
 
         Parameters:
@@ -383,29 +520,39 @@ class ParametricDMD:
 def main(tidal=False, mseos=False):
     fileList = []
     if mseos:
-        tov_data_path = f"{TOV_DATA_PATH}/MSEOS/"
+        tov_data_path = MSEOS_TOV_PATH
     else:
-        tov_data_path = f"{TOV_DATA_PATH}/Quarkies/"
+        tov_data_path = QEOS_TOV_PATH
 
     for file in os.listdir(tov_data_path):
         fileList.append(file)
 
     random.seed(48824)
-    updatedFileList = random.sample(fileList, 10)
-    updatedFileList = sorted(updatedFileList)
-    testFileList = random.sample(fileList, 5)  # originally 10
-    testFileList = sorted(testFileList)
+    fileList = sorted(fileList)
+    updatedFileList = [file for file in fileList[::3]]
+    print(len(updatedFileList))
+    updatedFileList = updatedFileList[::4]
+    # updatedFileList = random.sample(fileList, 20)
+    testFileList = [file for file in fileList[::5] if file not in updatedFileList]
+    print(len(testFileList))
+    # testFileList = testFileList[::4]
+    # testFileList = random.sample(fileList, 10)  # originally 10
+    # testFileList = sorted(testFileList)
 
     if not os.path.exists(TEST_DATA_PATH):
         os.makedirs(TEST_DATA_PATH)
     os.chdir(TEST_DATA_PATH)
-    os.system("rm * && cd ../")
+    for item in os.listdir("."):
+        if os.path.isfile(item) or os.path.islinke(item):
+            os.remove(item)
+        elif os.path.isdir(item):
+            shutil.rmtree(item)
     for file in testFileList:
         if file not in updatedFileList:
             dmdFile = os.path.join(tov_data_path, file)
-            os.system(f"cp {dmdFile} {TEST_DATA_PATH}")
+            shutil.copy(dmdFile, TEST_DATA_PATH)
 
-    training = ParametricDMD(updatedFileList, tov_data_path, 10, tidal)  # 13
+    training = ParametricSLM(updatedFileList, tov_data_path, 6, tidal)  # 13
     training.fit()
 
     time_dict = {}

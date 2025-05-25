@@ -1,14 +1,20 @@
-""" 
-Quarkonia EOS using Mclaren-Reddy Paper
-Author: Sudhanva Lalit
-Started: 09/14/2024
-Latest Update: 09/14/2024
-"""
+###########################################
+# Quarkyonia Equation of State (PNM)
+# Author: Sudhanva Lalit
+# Last edited: 24 November 2024
+###########################################
 
 import numpy as np
 import sys
 import os
+import shutil
 from scipy.interpolate import CubicSpline
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+from src import QEOS_PATH
 
 # Constants
 pi2 = np.pi**2
@@ -40,6 +46,7 @@ def main(kap, lamInput):
     # Initialize arrays
     epst = np.zeros(len(kArray))
     nbq = np.zeros(len(kArray))
+    nQuarks = []
 
     for i in range(len(kArray)):
         kfb = kArray[i]
@@ -50,6 +57,7 @@ def main(kap, lamInput):
             theta = 0
         else:
             theta = 1
+            nQuarks.append(i)
         kfq = abs(kfb - delta) / Nc * theta
         ll = Nc * kfq
         ul = kfb
@@ -101,6 +109,15 @@ def main(kap, lamInput):
     interpPrho = CubicSpline(nbq, press)
     cs2 = interpPrho(nbq, 1) / interpErho(nbq, 1)
 
+    # Write where quarks begin to appear
+    filename = "quarkyonia_params.txt"
+    if os.path.exists(filename):
+        with open(filename, "a") as f:
+            f.write(f"{kap} {lamInput} {nbq[nQuarks[0]]} \n")
+    else:
+        with open(filename, "w") as f:
+            f.write(f"{kap} {lamInput} {nbq[nQuarks[0]]} \n")
+
     # Add lowden part
     # Read the lowdensity file
     lowden = np.loadtxt("../EOS_Data/MFT_ns6p.dat")
@@ -126,7 +143,8 @@ def main(kap, lamInput):
         header=nameList,
         fmt="%.6e",
     )
-    os.system(f"mv {fileName} ../EOS_files/Quarkies/")
+    shutil.move(fileName, QEOS_PATH)
+    print(f"Quarkonia EOS saved to {QEOS_PATH}/{fileName}")
 
 
 if __name__ == "__main__":
