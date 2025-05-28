@@ -12,7 +12,7 @@ from scipy.interpolate import CubicSpline
 
 # Constants
 pi2 = np.pi**2
-Nc = 2.0
+Nc = 3.0
 hc = 197.33
 hc2 = hc**2
 mnmev = 939
@@ -52,7 +52,7 @@ def main(kap, lamInput):
             theta = 0
         else:
             theta = 1
-        kfq = abs(kfb - delta) / Nc * theta  # fermi momentum of quarks
+        kfq = (kfb - delta) / Nc * theta  # fermi momentum of quarks
         ll = Nc * kfq  # lower limit
         ul = kfb  # upper limit
         nn = (ul**3 - ll**3) / (3 * pi2)  # neutron number density
@@ -61,10 +61,10 @@ def main(kap, lamInput):
         Eul = eps(ul, mn)  # upper limit on epsilon
         Ell = eps(ll, mn)  # lower limit on epsilon
         epskb = 2 * (Eul - Ell) * hc 
-        epstb = epskb + vn
+        # epstb = epskb + vn
 
         # Add quarks
-        kfd = abs(kfb - delta) / 3.0 * theta  # fermi momentum of down quarks
+        kfd = (kfb - delta) / 3.0 * theta  # fermi momentum of down quarks
         kfu = 2 ** (-1 / 3.0) * kfd  # fermi momentum of up quarks
         nq = (kfd**3 + kfu**3) / (3 * pi2)  # quark number density
         nu = kfu**3 / pi2
@@ -81,9 +81,11 @@ def main(kap, lamInput):
         eulu = eps(kfu, mq)
         ellu = eps(0.0, mq)
         epsku = 2 * Nc * (eulu - ellu) * hc
+        # epsku = Nc * (eulu - ellu) * hc
         euld = eps(kfd, mq)
         elld = eps(0.0, mq)
         epskd = 2 * Nc * (euld - elld) * hc
+        # epskd = Nc * (euld - elld) * hc
         epskq = epsku + epskd
 
         # Total including quarks and nucleons
@@ -97,7 +99,9 @@ def main(kap, lamInput):
     interpErho = CubicSpline(nbq, epst)
     indices = np.where(nbq > 0.08)
     nbq = nbq[indices]
+    nbq = np.arange(0.085, max(nbq), 0.005)  # make the step size not have any weird hiccups
     epst = epst[indices]
+    epst = interpErho(nbq)
 
     press = -epst + interpErho(nbq, 1) * nbq
     interpPrho = CubicSpline(nbq, press)

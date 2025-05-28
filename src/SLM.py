@@ -115,7 +115,7 @@ def DMD(X, r, dt):
     return Phi, omega, lambda_vals, b, Xdmd, S
 
 
-def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
+def solve_tov(fileName, tidal=False, parametric=False, mseos=True, pres_init=2.0):
     r"""
     Solves the TOV equation and returns radius, mass and central pressure
 
@@ -145,7 +145,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     # file = TOVsolver(eos_file, tidal=tidal, solver="solve_ivp", solve_ivp_kwargs={"method": "Radau",
     #                                                                               "atol": 1e-8,
     #                                                                               "rtol": 1e-8})
-    file.tov_routine(verbose=False, write_to_file=False)
+    file.tov_routine(verbose=False, write_to_file=False, pres_init=pres_init)
     print("R of 1.4 solar mass star: ", file.canonical_NS_radius())
     dataArray = [
         file.total_radius.flatten(),
@@ -164,14 +164,14 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     return dataArray
 
 
-def main(fileName, svdSize, tidal=False, parametric=False, mseos=True):
+def main(fileName, svdSize, tidal=False, parametric=False, mseos=True, pres_init=2.0):
     startHFTime = time.time()
     if tidal is True:
         radius, pcentral, mass, tidal_def = solve_tov(
-            fileName, tidal, parametric, mseos
+            fileName, tidal, parametric, mseos, pres_init=pres_init
         )
     else:
-        radius, pcentral, mass = solve_tov(fileName, tidal, parametric, mseos)
+        radius, pcentral, mass = solve_tov(fileName, tidal, parametric, mseos, pres_init=pres_init)
     endHFTime = time.time()
     p = pcentral
     r = radius
@@ -236,11 +236,11 @@ def complex_encoder(obj):
 
 if __name__ == "__main__":
     argv = sys.argv
-    (fileName, svdSize, tidal, parametric, mseos) = argv[1:]
+    (fileName, svdSize, tidal, parametric, mseos, pres_init) = argv[1:]
     nameList = fileName.strip(".dat").split("_")
     name = "DMD_" + (".".join(fileName.split(".")[:-1]).split("_eos")[0]).strip("_EOS") + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
-        fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos)
+        fileName, int(svdSize), eval(tidal), eval(parametric), eval(mseos), eval(pres_init)
     )
     if mseos is True and parametric is True:
         if os.path.exists(DMD_RES_MSEOS) is False:

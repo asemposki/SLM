@@ -25,11 +25,16 @@ TRAIN_PATH = f"{base_PATH}/trainData/Quarkies/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 4)[1:]  # 20
-kappaVal = np.linspace(0.1, 0.3, 3)  # 10
-# lamVal = [433.33]
-# lamVal = [500.00]
-# kappaVal = [0.30]
+lamVal = np.linspace(300, 500, 20)  # 20
+kappaVal = np.linspace(0.1, 0.3, 10)  # 10
+
+lam_i, kappa_i = 19, 9
+lamVal = [lamVal[lam_i]]
+kappaVal = [kappaVal[kappa_i]]
+
+# 6.93 or 7.1
+pres_init = 7.1
+
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)
@@ -42,6 +47,7 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
     parametric = True
 
     if mseos is True:
+        return 
         if not os.path.exists(MSEOS_PATH):
             os.makedirs(MSEOS_PATH)
         for lam in Ls:
@@ -67,11 +73,19 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
     else:
         if not os.path.exists(Quarkies_PATH):
             os.makedirs(Quarkies_PATH)
-        i = 1
+        q = 1
         runs = (len(lamVal) * len(kappaVal))
-        for lam in lamVal:
-            for kappa in kappaVal:
-                print(f"\n{i} of {runs} runs.")
+        # pres_init_array = np.linspace(1.2, 2.0, runs)
+        
+        for i, lam in enumerate(lamVal):
+            for j, kappa in enumerate(kappaVal):
+                print(f"\n{q} of {runs} runs.")
+                # pres_init = pres_init_array[q - 1]  # slowly increase the initial pressure for the solutions
+                # print(f"lambda weighting = {1 + i / len(lamVal)}")
+                # print(f" kappa weighting = {1 + j / len(kappaVal)}")
+                # pres_init = 0.80 * (1 + i / len(lamVal)) - \
+                #             0.05 * (1 + j / len(kappaVal))
+                
                 time_initial = time.time()
                 # Make Quarkies
                 os.chdir(EOS_CODE_PATH)
@@ -79,13 +93,11 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                 os.system(f"python3 Quarkyonia.py {kappa} {lam}")
                 print(fileName)
                 os.chdir(src_PATH)
-                os.system(
-                    f"python3 SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}"
-                )
+                os.system(f"python3 SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos} {pres_init}")
                 time_final = time.time()
                 runtime = time_final - time_initial
-                i += 1
-                print(f"ETA: {runtime * (runs - i + 1) / 60:.4} minutes")
+                q += 1
+                print(f"ETA: {runtime * (runs - q + 1) / 60:.4} minutes")
 
     # os.system(f"python3 pSLM.py {tidal} {mseos}")
 
@@ -108,7 +120,9 @@ def main(parametric=False, tidal=False, mseos=False):
 
 
 if __name__ == "__main__":
-    cleanup = input("Clean up the directories? (True/False)[False]: ") or False
+    # cleanup = input("Clean up the directories? (True/False)[False]: ") or False
+    print("Clean up the directories? (True/False)[False]: False")
+    cleanup = False
     if isinstance(cleanup, str):
         cleanup = eval(cleanup)
     if cleanup is True:
@@ -122,14 +136,20 @@ if __name__ == "__main__":
         os.makedirs(MR_PATH)
     if not os.path.exists(PLOTS_PATH):
         os.makedirs(PLOTS_PATH)
-    parametric = input("Parametric or General DMD? (True/False)[True]: ") or True
-    tidal = input("Tidal or Non-Tidal? (True/False)[True]: ") or True
+    # parametric = input("Parametric or General DMD? (True/False)[True]: ") or True
+    print("Parametric or General DMD? (True/False)[True]: True")
+    parametric = True
+    # tidal = input("Tidal or Non-Tidal? (True/False)[True]: ") or True
+    print(("Tidal or Non-Tidal? (True/False)[True]: True"))
+    tidal = True
     if isinstance(parametric, str):
         parametric = eval(parametric)
     if isinstance(tidal, str):
         tidal = eval(tidal)
     if parametric is True:
-        mseos = input("MSEOS or Quarkies? (True/False)[True]: ") or True
+        # mseos = input("MSEOS or Quarkies? (True/False)[True]: ") or True
+        print("MSEOS or Quarkies? (True/False)[True]: False")
+        mseos = False
         if isinstance(mseos, str):
             mseos = eval(mseos)
         main(parametric, tidal, mseos)

@@ -416,7 +416,7 @@ class TOVsolver:
 
         return tidal_deform, k2
 
-    def tov_routine(self, verbose=False, write_to_file=False):
+    def tov_routine(self, pres_init=None, verbose=False, write_to_file=False):
         r"""
         The TOV routine to solve each set of coupled ODEs and to output
         the quantities needed to display the M-R curve, as well as the
@@ -445,16 +445,16 @@ class TOVsolver:
         """
 
         # initial pressure
-        # pres_init = min(2.0, max(self.pres_array))
-        # pres_init = max(0.5, max(self.pres_array))  # was 0.7
-        pres_init = max(0.5, max(self.pres_array) * 0.6)
-        print(f"pres_init = {pres_init:.4}")
-        # pres_init = 1.3
+        if pres_init is None:
+            pres_init = min(2.0, max(self.pres_array))
+            # pres_init = 0.7 * max(self.pres_array) + 1.0
+        else:
+            pres_init = pres_init
+        print(f"\npres_init = {pres_init}\n")
         mass_init = 0.0
 
         if self.tidal is True:
-            # y_init = 2.0
-            y_init = 1.5
+            y_init = 2.0
 
         # set initial radius array
         low_pres = max(1e-3, min(self.pres_array))
