@@ -28,12 +28,12 @@ TRAIN_PATH = f"{base_PATH}/trainData/Quarkies/"
 lamVal = np.linspace(300, 500, 20)  # 20
 kappaVal = np.linspace(0.1, 0.3, 10)  # 10
 
-lam_i, kappa_i = 19, 9
-lamVal = [lamVal[lam_i]]
-kappaVal = [kappaVal[kappa_i]]
+# lam_i, kappa_i = 12, 3
+# lamVal = [lamVal[lam_i]]
+# kappaVal = [kappaVal[kappa_i]]
 
 # 6.93 or 7.1
-pres_init = 7.1
+pres_init = 8.0
 
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)

@@ -447,10 +447,9 @@ class TOVsolver:
         # initial pressure
         if pres_init is None:
             pres_init = min(2.0, max(self.pres_array))
-            # pres_init = 0.7 * max(self.pres_array) + 1.0
         else:
             pres_init = pres_init
-        print(f"\npres_init = {pres_init}\n")
+        # print(f"\npres_init = {pres_init}\n")
         mass_init = 0.0
 
         if self.tidal is True:
