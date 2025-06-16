@@ -32,8 +32,7 @@ kappaVal = np.linspace(0.1, 0.3, 10)  # 10
 # lamVal = [lamVal[lam_i]]
 # kappaVal = [kappaVal[kappa_i]]
 
-# 6.93 or 7.1
-pres_init = 8.0
+pres_init = 2.0
 
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
