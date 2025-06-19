@@ -357,9 +357,9 @@ class TOVsolver:
         """
         pre = (3.0 / 2.0) * x**2.0 / (1.0 - mass / x)
         one = 5.0 * eps + 9.0 * pres + ((eps + pres) / cs2) - (4.0 / x**2.0)
-        two = (mass / x) + 3.0 / 2.0 * x**2.0 * pres
+        two = (mass / x) + 3.0 * x**2.0 * pres
         three = 1.0 - mass / x
-        return pre * one - 4 * (two / three) ** 2.0
+        return pre * one - (two / three) ** 2.0
 
     # love number equations and tidal deformability
     def tidal_def(self, yR, mass, radius):
