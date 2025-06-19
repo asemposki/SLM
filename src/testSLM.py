@@ -25,14 +25,14 @@ TRAIN_PATH = f"{base_PATH}/trainData/Quarkies/"
 
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 20)  # 20
-kappaVal = np.linspace(0.1, 0.3, 10)  # 10
+lamVal = np.linspace(300, 500, 20)[::5]  # 20
+kappaVal = np.linspace(0.1, 0.3, 10)[::4]  # 10
 
 # lam_i, kappa_i = 12, 3
 # lamVal = [lamVal[lam_i]]
 # kappaVal = [kappaVal[kappa_i]]
 
-pres_init = 2.0
+pres_init = None
 
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
@@ -42,7 +42,7 @@ xiVal = np.linspace(0.0, 1.0, 2)
 # xiVal = [1.0]
 
 
-def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
+def eval_parametric(EOS_PATH=None, tidal=False, mseos=False):
     parametric = True
 
     if mseos is True:
@@ -92,7 +92,7 @@ def eval_parametric(svdSize=8, EOS_PATH=None, tidal=False, mseos=False):
                 os.system(f"python3 Quarkyonia.py {kappa} {lam}")
                 print(fileName)
                 os.chdir(src_PATH)
-                os.system(f"python3 SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos} {pres_init}")
+                os.system(f"python3 SLM.py {fileName} {tidal} {parametric} {mseos} {pres_init}")
                 time_final = time.time()
                 runtime = time_final - time_initial
                 q += 1
@@ -108,14 +108,14 @@ def main(parametric=False, tidal=False, mseos=False):
             svdSize = 14
         else:
             EOS_PATH = Quarkies_PATH
-            svdSize = 12
-        eval_parametric(svdSize, EOS_PATH, tidal, mseos)
+            # svdSize = 12
+        eval_parametric(EOS_PATH, tidal, mseos)
     else:
         EOS_PATH = f"{base_PATH}/EOS_Data/"
         fileName = input("Enter the EOS file name: ")
-        svdSize = int(input("Enter the SVD size[Int]: "))
+        # svdSize = int(input("Enter the SVD size[Int]: "))
         print(f"Running DMD for {fileName}")
-        os.system(f"python SLM.py {fileName} {svdSize} {tidal} {parametric} {mseos}")
+        os.system(f"python SLM.py {fileName} {tidal} {parametric} {mseos}")
 
 
 if __name__ == "__main__":

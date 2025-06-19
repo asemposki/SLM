@@ -72,7 +72,7 @@ def augment_data_multiple_columns(X):
 
 
 # Numpy based SLM
-def SLM(X, dt, error_threshold=1e-4, max_r=None):
+def SLM(X, dt, error_threshold=1e-4, max_r=None, modes: int = None):
     r"""
     Dynamic Mode decomposition for the augmented Data.
     Automatically determines the number of modes (r) based on an error threshold.
@@ -98,28 +98,110 @@ def SLM(X, dt, error_threshold=1e-4, max_r=None):
 
     # Compute SVD of X1 once
     U_full, S_full, Vt_full = np.linalg.svd(X1, full_matrices=False)
+    
+    if modes is None:
+        # Determine the maximum possible rank
+        max_possible_r = min(X1.shape)
+        if max_r is None:
+            max_r_to_check = max_possible_r
+        else:
+            max_r_to_check = min(max_r, max_possible_r)
 
-    # Determine the maximum possible rank
-    max_possible_r = min(X1.shape)
-    if max_r is None:
-        max_r_to_check = max_possible_r
+        # Initialize r and best_error
+        r_optimal = 1
+        min_error = float("inf")
+        best_Xdmd = None
+        best_Phi = None
+        best_omega = None
+        best_lambda_vals = None
+        best_b = None
+        
+        # Iterate through possible ranks to find the optimal 'r'
+        for r_current in range(1, max_r_to_check + 1):
+            U_r = U_full[:, :r_current]
+            S_r_inv = np.diag(1.0 / S_full[:r_current])
+            V_r = Vt_full[:r_current, :]
+
+            # Compute Atilde
+            Atilde = U_r.T @ X2 @ V_r.T @ S_r_inv
+
+            # Compute eigenvectors and eigenvalues
+            D, W_r = np.linalg.eig(Atilde)
+
+            Phi_current = X2 @ V_r.T @ S_r_inv @ W_r  # DMD modes
+            lambda_vals_current = D  # discrete-time eigenvalues
+            omega_current = np.log(lambda_vals_current) / dt  # continuous-time eigenvalue
+
+            # Compute DMD mode amplitudes b
+            x1 = X1[:, 0]
+            b_current = np.linalg.lstsq(Phi_current, x1, rcond=None)[0]
+
+            # DMD reconstruction for the current 'r'
+            mm1 = X1.shape[1] + 1
+            t = np.arange(mm1) * dt
+
+            time_dynamics_current = b_current[:, np.newaxis] * np.exp(
+                omega_current[:, np.newaxis] * t
+            )
+            Xdmd2_current = Phi_current @ time_dynamics_current
+
+            # Truncate to original number of variables (log-transformed)
+            Xdmd_current_original_vars = Xdmd2_current[:n, :]
+
+            # Calculate error (max absolute difference)
+            # Using original X (log-transformed) for comparison
+            current_error = np.max(np.abs(X - Xdmd_current_original_vars))
+
+            print(f"Testing r={r_current}: Max absolute error = {current_error:.6f}")
+
+            if current_error <= error_threshold:
+                r_optimal = r_current
+                min_error = current_error
+                # Store the results for the optimal r
+                best_Xdmd = Xdmd_current_original_vars
+                best_Phi = Phi_current[:n, :]  # Truncate Phi to original variables
+                best_omega = omega_current
+                best_lambda_vals = lambda_vals_current
+                best_b = b_current
+                break  # Found the smallest r that satisfies the threshold
+
+            # If we didn't meet the threshold, but this r gives the best error so far, keep its results
+            if current_error < min_error:
+                min_error = current_error
+                r_optimal = r_current
+                best_Xdmd = Xdmd_current_original_vars
+                best_Phi = Phi_current[:n, :]
+                best_omega = omega_current
+                best_lambda_vals = lambda_vals_current
+                best_b = b_current
+
+        print(f"Optimal 'r' determined: {r_optimal} (Max absolute error = {min_error:.6f})")
+
+        # If no 'r' met the threshold, use the one that gave the minimum error
+        if best_Xdmd is None:  # This should not happen if max_r_to_check >= 1
+            # Fallback to a default if no optimal r is found (e.g., r=1)
+            # r_optimal = 1
+            U_r = U_full[:, :r_optimal]
+            S_r_inv = np.diag(1.0 / S_full[:r_optimal])
+            V_r = Vt_full[:r_optimal, :]
+            Atilde = U_r.T @ X2 @ V_r.T @ S_r_inv
+            D, W_r = np.linalg.eig(Atilde)
+            best_Phi = X2 @ V_r.T @ S_r_inv @ W_r
+            best_lambda_vals = D
+            best_omega = np.log(best_lambda_vals) / dt
+            x1 = X1[:, 0]
+            best_b = np.linalg.lstsq(best_Phi, x1, rcond=None)[0]
+            mm1 = X1.shape[1] + 1
+            t = np.arange(mm1) * dt
+            time_dynamics = best_b[:, np.newaxis] * np.exp(best_omega[:, np.newaxis] * t)
+            best_Xdmd = (best_Phi @ time_dynamics)[:n, :]
+            print(
+                f"Warning: No r met the threshold. Using r={r_optimal} with max error {np.max(np.abs(X - best_Xdmd)):.6f}"
+            )
     else:
-        max_r_to_check = min(max_r, max_possible_r)
-
-    # Initialize r and best_error
-    r_optimal = 1
-    min_error = float("inf")
-    best_Xdmd = None
-    best_Phi = None
-    best_omega = None
-    best_lambda_vals = None
-    best_b = None
-
-    # Iterate through possible ranks to find the optimal 'r'
-    for r_current in range(1, max_r_to_check + 1):
-        U_r = U_full[:, :r_current]
-        S_r_inv = np.diag(1.0 / S_full[:r_current])
-        V_r = Vt_full[:r_current, :]
+        U_r = U_full[:, :modes]
+        S_r_inv = np.diag(1.0 / S_full[:modes])
+        V_r = Vt_full[:modes, :]
 
         # Compute Atilde
         Atilde = U_r.T @ X2 @ V_r.T @ S_r_inv
@@ -147,56 +229,14 @@ def SLM(X, dt, error_threshold=1e-4, max_r=None):
         # Truncate to original number of variables (log-transformed)
         Xdmd_current_original_vars = Xdmd2_current[:n, :]
 
-        # Calculate error (max absolute difference)
-        # Using original X (log-transformed) for comparison
-        current_error = np.max(np.abs(X - Xdmd_current_original_vars))
-
-        print(f"Testing r={r_current}: Max absolute error = {current_error:.6f}")
-
-        if current_error <= error_threshold:
-            r_optimal = r_current
-            min_error = current_error
-            # Store the results for the optimal r
-            best_Xdmd = Xdmd_current_original_vars
-            best_Phi = Phi_current[:n, :]  # Truncate Phi to original variables
-            best_omega = omega_current
-            best_lambda_vals = lambda_vals_current
-            best_b = b_current
-            break  # Found the smallest r that satisfies the threshold
-
-        # If we didn't meet the threshold, but this r gives the best error so far, keep its results
-        if current_error < min_error:
-            min_error = current_error
-            r_optimal = r_current
-            best_Xdmd = Xdmd_current_original_vars
-            best_Phi = Phi_current[:n, :]
-            best_omega = omega_current
-            best_lambda_vals = lambda_vals_current
-            best_b = b_current
-
-    print(f"Optimal 'r' determined: {r_optimal} (Max absolute error = {min_error:.6f})")
-
-    # If no 'r' met the threshold, use the one that gave the minimum error
-    if best_Xdmd is None:  # This should not happen if max_r_to_check >= 1
-        # Fallback to a default if no optimal r is found (e.g., r=1)
-        # r_optimal = 1
-        U_r = U_full[:, :r_optimal]
-        S_r_inv = np.diag(1.0 / S_full[:r_optimal])
-        V_r = Vt_full[:r_optimal, :]
-        Atilde = U_r.T @ X2 @ V_r.T @ S_r_inv
-        D, W_r = np.linalg.eig(Atilde)
-        best_Phi = X2 @ V_r.T @ S_r_inv @ W_r
-        best_lambda_vals = D
-        best_omega = np.log(best_lambda_vals) / dt
-        x1 = X1[:, 0]
-        best_b = np.linalg.lstsq(best_Phi, x1, rcond=None)[0]
-        mm1 = X1.shape[1] + 1
-        t = np.arange(mm1) * dt
-        time_dynamics = best_b[:, np.newaxis] * np.exp(best_omega[:, np.newaxis] * t)
-        best_Xdmd = (best_Phi @ time_dynamics)[:n, :]
-        print(
-            f"Warning: No r met the threshold. Using r={r_optimal} with max error {np.max(np.abs(X - best_Xdmd)):.6f}"
-        )
+        r_optimal = None
+        min_error = None
+        # Store the results for the optimal r
+        best_Xdmd = Xdmd_current_original_vars
+        best_Phi = Phi_current[:n, :]  # Truncate Phi to original variables
+        best_omega = omega_current
+        best_lambda_vals = lambda_vals_current
+        best_b = b_current
 
     return best_Phi, best_omega, best_lambda_vals, best_b, best_Xdmd, S_full, r_optimal
 
@@ -263,7 +303,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True, pres_init=Non
     return dataArray
 
 
-def main(fileName, tidal=False, parametric=False, mseos=True):
+def main(fileName, tidal=False, parametric=False, mseos=True, pres_init=None):
     r"""
     Main function to run the SLM code. Solves the TOV equation and
     computes the SLM modes.
@@ -289,10 +329,10 @@ def main(fileName, tidal=False, parametric=False, mseos=True):
     startHFTime = time.time()
     if tidal is True:
         radius, pcentral, mass, tidal_def = solve_tov(
-            fileName, tidal, parametric, mseos
+            fileName, tidal, parametric, mseos, pres_init
         )
     else:
-        radius, pcentral, mass = solve_tov(fileName, tidal, parametric, mseos)
+        radius, pcentral, mass = solve_tov(fileName, tidal, parametric, mseos, pres_init)
     endHFTime = time.time()
 
     # Assign variables directly from the solve_tov output
@@ -371,11 +411,11 @@ def complex_encoder(obj):
 if __name__ == "__main__":
     argv = sys.argv
     # The svdSize argument is still passed from the command line, but now unused in main()
-    (fileName, tidal, parametric, mseos) = argv[1:]
+    (fileName, tidal, parametric, mseos, pres_init) = argv[1:]
     nameList = os.path.basename(fileName).strip(".dat").split("_")
     name = "SLM_" + "_".join(nameList[1:]) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
-        fileName, eval(tidal), eval(parametric), eval(mseos)
+        fileName, eval(tidal), eval(parametric), eval(mseos), eval(pres_init)
     )
 
     # Determine output directory based on parametric and mseos flags

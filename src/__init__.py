@@ -22,11 +22,11 @@ TEST_DATA_PATH = os.path.join(BASE_DIR, "testData")
 TUTORIALS_DIR = os.path.join(BASE_DIR, "Tutorials")
 
 # Quarkyonia and MSEOS paths
-QEOS_PATH = os.path.join(EOS_FILES_DIR, "QEOS")
+QEOS_PATH = os.path.join(EOS_FILES_DIR, "Quarkies")
 MSEOS_PATH = os.path.join(EOS_FILES_DIR, "MSEOS")
 
 # Quarkyonia and MS EOS TOV results paths
-QEOS_TOV_PATH = os.path.join(TOV_PATH, "QEOS")
+QEOS_TOV_PATH = os.path.join(TOV_PATH, "Quarkies")
 MSEOS_TOV_PATH = os.path.join(TOV_PATH, "MSEOS")
 
 # SLM results path
