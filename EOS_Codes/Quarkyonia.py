@@ -38,11 +38,11 @@ def eps(k, m):
     return pre * t
 
 
-def main(kap, lamInput):
+def main(kap, lamInput, out_file=None):
     lam = lamInput / hc
     kfmin = 0.25
     kfmax = 5.0
-    kArray = np.linspace(kfmin, kfmax, 100)
+    kArray = np.linspace(kfmin, kfmax, 400)
     # Initialize arrays
     epst = np.zeros(len(kArray))
     nbq = np.zeros(len(kArray))
@@ -53,7 +53,7 @@ def main(kap, lamInput):
         delta = lam**3 / kfb**2 + kap * lam / Nc**2
 
         # Neutrons
-        if kfb < delta:
+        if kfb <= delta:
             theta = 0
         else:
             theta = 1
@@ -101,7 +101,7 @@ def main(kap, lamInput):
         # print(f"nb: {nb}, nn/nb: {nn/nb}, nq/nb: {nq/nb}, nu: {nu}, nd: {nd}")
 
     interpErho = CubicSpline(nbq, epst)
-    indices = np.where(nbq > 0.08)
+    indices = np.where(nbq >= 0.08)
     nbq = nbq[indices]
     epst = epst[indices]
 
@@ -136,18 +136,27 @@ def main(kap, lamInput):
     cs2 = np.concatenate((cs2Low, cs2))
 
     nameList = "nb (fm^-1)   E (MeV)     P (MeV/fm^3)    cs2"
-    fileName = f"EOS_Quarkyonia_{lamInput:.2f}_{kap:.2f}.dat"
+    # fileName = f"EOS_Quarkyonia_{lamInput:.2f}_{kap:.2f}.dat"
+    fixed_path = os.path.join(QEOS_PATH, f"EOS_Quarkyonia_{kap:.2f}_{lamInput:.2f}.txt")
+    fileName = out_file if out_file else fixed_path
+    print(f"Saving Quarkyonia EOS to {fileName}...")
     np.savetxt(
         fileName,
         np.array([nbq, epst, press, cs2], dtype=np.float64).T,
         header=nameList,
         fmt="%.6e",
     )
-    shutil.move(fileName, QEOS_PATH)
+    # shutil.move(fileName, QEOS_PATH)
     print(f"Quarkonia EOS saved to {QEOS_PATH}/{fileName}")
 
 
 if __name__ == "__main__":
     argv = sys.argv
+    # if len(argv) == 4:
+    #     kap, lam, out_file = argv[1:]
+    # else:
+    #     print("Usage: python Quarkyonia.py <kap> <lam> [<output_file>]")
+    #     sys.exit(1)
     kap, lam = argv[1:]
     main(float(kap), float(lam))
+    # main(float(kap), float(lam), out_file=out_file)

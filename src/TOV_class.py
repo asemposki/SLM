@@ -1,7 +1,7 @@
 #######################################
 # TOV (High-Fidelity) Scaled Solver
 # Author: Alexandra C. Semposki
-# Last edited: 5 May 2025, by Joshua Maldonado
+# Last edited: 5 May 2025, by Sudhanva Lalit 1 June 2025
 #######################################
 
 import os
@@ -15,7 +15,14 @@ from scipy.interpolate import interp1d
 
 class TOVsolver:
 
-    def __init__(self, eos_filepath=None, tidal=False, solver="RK4", solve_ivp_kwargs=None, sol_pts=4000):
+    def __init__(
+        self,
+        eos_filepath=None,
+        tidal=False,
+        solver="RK4",
+        solve_ivp_kwargs=None,
+        sol_pts=4000,
+    ):
         r"""
         Class to calculate the Tolman-Oppenheimer-Volkoff equations,
         including options for the tidal deformability and moment of
@@ -89,6 +96,7 @@ class TOVsolver:
 
                 # extract data and assign to arrays (assumes one sample/draw of EOS)
                 self.eos_file = eos_filepath
+                print("Loading EOS data from file: ", eos_filepath)
                 eos_data = np.loadtxt(eos_filepath)  # , skiprows=2)
                 self.eps_array = eos_data.T[1] / self.eps0
                 self.pres_array = eos_data.T[2] / self.pres0
@@ -165,7 +173,7 @@ class TOVsolver:
         solution = np.asarray(solution, dtype=np.float64).T
 
         return times, solution
-    
+
     def RK2(self, f, x0, t0, te, N):
         r"""
         A simple RK2 solver using the Heun's method.
@@ -192,7 +200,7 @@ class TOVsolver:
             solution (array): The solutions of each function
                 at each point in the grid.
         """
-        
+
         h = (te - t0) / N
         times = np.arange(t0, te + h, h)
         solution = []
@@ -207,7 +215,7 @@ class TOVsolver:
         solution = np.asarray(solution, dtype=np.float64).T
 
         return times, solution
-    
+
     def euler(self, f, x0, t0, te, N):
         r"""
         A simple forward euler solver to avoid overhead of
@@ -236,7 +244,7 @@ class TOVsolver:
             solution (array): The solutions of each function
                 at each point in the grid.
         """
-        
+
         h = (te - t0) / N
         times = np.arange(t0, te + h, h)
         solution = []
@@ -245,7 +253,7 @@ class TOVsolver:
         for t in times:
             solution.append(np.array(x).T)
             x += h * f(t, x)
-            
+
         solution = np.asarray(solution, dtype=np.float64).T
 
         return times, solution
@@ -357,8 +365,8 @@ class TOVsolver:
         """
         pre = (3.0 / 2.0) * x**2.0 / (1.0 - mass / x)
         one = 5.0 * eps + 9.0 * pres + ((eps + pres) / cs2) - (4.0 / x**2.0)
-        two = (mass / x) + 3.0 * x**2.0 * pres
-        three = 1.0 - mass / x
+        two = mass + 3.0 * x**3.0 * pres
+        three = x - mass
         return pre * one - (two / three) ** 2.0
 
     # love number equations and tidal deformability
@@ -412,7 +420,9 @@ class TOVsolver:
         )
 
         # tidal deformability calculation
-        tidal_deform = (2.0 / 3.0) * k2 * (2.0 * self.mass0 * radius / (self.rad0 * mass))**5.0
+        tidal_deform = (
+            (2.0 / 3.0) * k2 * (2.0 * self.mass0 * radius / (self.rad0 * mass)) ** 5.0
+        )
 
         return tidal_deform, k2
 
@@ -445,14 +455,14 @@ class TOVsolver:
         """
 
         # initial pressure
-        pres_init = min(2.0, max(self.pres_array))
+        pres_init = min(2.0, np.max(self.pres_array))  # Use np.max for clarity
         mass_init = 0.0
 
         if self.tidal is True:
             y_init = 2.0
 
         # set initial radius array
-        low_pres = max(1e-3, min(self.pres_array))
+        low_pres = max(1e-3, np.min(self.pres_array))  # Use np.min for clarity
         x = np.geomspace(1e-8, 2.5, 50)
         pres_space = np.geomspace(low_pres, pres_init, len(x))
 
@@ -503,37 +513,45 @@ class TOVsolver:
             # Improve init_guess as one entry for all solutions
             # high fidelity (four function evals per sol_pt)
             if self.solver == "RK4":
-                xval, sol = self.RK4(self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts)
-            
+                xval, sol = self.RK4(
+                    self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
+                )
+
             # low fidelity (two function evals per sol_pt)
             elif self.solver == "RK2":
-                xval, sol = self.RK2(self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts)
-            
+                xval, sol = self.RK2(
+                    self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
+                )
+
             # low fidelity (one function eval per sol_pt)
             elif self.solver == "euler":
-                xval, sol = self.euler(self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts)
-            
+                xval, sol = self.euler(
+                    self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
+                )
+
             # adaptive (typically high fidelity)
             elif self.solver == "solve_ivp":
                 if self.solve_ivp_kwargs is None:
-                    self.solve_ivp_kwargs = {"method": "RK45",
-                                             "atol": 5e-14,
-                                             "rtol": self.tol,
-                                             "max_step": 0.01,
-                                             "dense_output": True}
+                    self.solve_ivp_kwargs = {
+                        "method": "RK45",
+                        "atol": 5e-14,
+                        "rtol": self.tol,
+                        "max_step": 0.01,
+                        "dense_output": True,
+                    }
                 if self.tidal is True:
                     sol = solve_ivp(
                         self.tov_equations_scaled,
                         [1e-3, 2.5],
                         [pres_arg, mass_arg, y_arg],
-                        **self.solve_ivp_kwargs
+                        **self.solve_ivp_kwargs,
                     )
                 else:
                     sol = solve_ivp(
                         self.tov_equations_scaled,
                         [1e-8, 2.5],
                         [pres_arg, mass_arg],
-                        **self.solve_ivp_kwargs
+                        **self.solve_ivp_kwargs,
                     )
                 if not sol.success:
                     print("Solver failed.")
@@ -541,11 +559,21 @@ class TOVsolver:
                 xval = sol.t
                 sol = sol.y
             else:
-                assert ValueError(f"Solver, {self.solver} unknown. Must be \"RK4\", \"RK2\", \"euler\", or \"solve_ivp\".")
+                raise ValueError(
+                    f'Solver, {self.solver} unknown. Must be "RK4", "RK2", "euler", or "solve_ivp".'
+                )
 
             # maximum mass
-            index_mass = np.where([sol[0] > 1e-10])[1][-1]
-            max_mass[i] = sol[1, index_mass]
+            # Find the index where pressure becomes very small (approaching zero)
+            # Use np.flatnonzero for more robust indexing
+            pressure_positive_indices = np.flatnonzero(sol[0] > 1e-10)
+            if pressure_positive_indices.size > 0:
+                index_mass = pressure_positive_indices[-1]
+                max_mass[i] = sol[1, index_mass]
+            else:
+                # Handle cases where pressure never goes above threshold or immediately drops
+                max_mass[i] = 0.0  # Or some other appropriate default
+                # print(f"Warning: Pressure did not stay positive for central pressure {pres_arg}")
 
             # central pressure
             pres_central[i] = np.max(sol[0])
@@ -663,15 +691,14 @@ class TOVsolver:
             tov_data = np.column_stack(
                 [self.total_radius, self.total_mass, self.total_pres_central]
             )
-            file_name = "TOV_data/rpm_results" + "_" + self.eos_name + ".dat"
+            file_name = "TOV_data/rpm_results" + "_" + self.eos_name + ".txt"
             header = "Radius[km] Mass[Msol] Central_Pressure[MeV/fm3]"
             np.savetxt(file_name, tov_data, header=header, delimiter=" ")
 
         return self.total_radius, self.total_pres_central, self.total_mass
-    
 
     def max_arrays(self):
-        r'''
+        r"""
         Returns the max arrays needed for the interval calculation.
 
         Parameters:
@@ -681,9 +708,8 @@ class TOVsolver:
             self.max_radius_arr (array): Maximum radius array.
             self.max_pres_arr (array): Maximum central pressure array.
             self.max_mass_arr (array): Maximum mass array.
-        '''
+        """
         return self.max_radius_arr, self.max_pres_arr, self.max_mass_arr
-
 
     def central_dens(self, pres_arr=None):
         r"""
@@ -718,7 +744,6 @@ class TOVsolver:
 
         return c_dens
 
-
     def canonical_NS_radius(self):
         r"""
         Calculation of the radius of a 1.4 M_sol neutron star.
@@ -746,11 +771,11 @@ class TOVsolver:
 
 def main():
 
-    filePath = os.getcwd().strip('src')
+    filePath = os.getcwd().strip("src")
     eosName = "sorted_Sly4.dat"
     fileName = filePath + "/EOS_Data/" + eosName
 
-    print(filePath + '/EOS_Data/')
+    print(filePath + "/EOS_Data/")
 
     tov = TOVsolver(fileName, tidal=False)
     start_time = time.time()
@@ -760,7 +785,8 @@ def main():
 
     print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
 
-    print('Central density: ', tov.central_dens())
+    print("Central density: ", tov.central_dens())
+
 
 if __name__ == "__main__":
     main()
