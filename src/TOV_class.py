@@ -569,8 +569,8 @@ class TOVsolver:
             self.sols.append([self.rad0 * xval[:index_mass],
                               self.pres0 * sol[0][:index_mass],
                               self.mass0 * sol[1][:index_mass],
-                              # sol[2][:index_mass] if self.tidal else None])
-                              k2_long if self.tidal else None])
+                              sol[2][:index_mass] if self.tidal else None])
+                            #   k2_long if self.tidal else None])
 
         # scale results (send back totals at the end using these)
         max_mass = max_mass * self.mass0
