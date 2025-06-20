@@ -562,10 +562,15 @@ class TOVsolver:
 
             if self.tidal is True:
                 self.yR[i] = sol[2][index_mass]
-            self.sols.append([xval[:index_mass],
-                              sol[0][:index_mass],
-                              sol[1][:index_mass],
-                              sol[2][:index_mass] if self.tidal else None])
+                tidal_long, k2_long = self.tidal_def(sol[2][:index_mass], 
+                                                     self.mass0 * sol[1, :index_mass], 
+                                                     self.rad0 * xval[:index_mass])
+            
+            self.sols.append([self.rad0 * xval[:index_mass],
+                              self.pres0 * sol[0][:index_mass],
+                              self.mass0 * sol[1][:index_mass],
+                              # sol[2][:index_mass] if self.tidal else None])
+                              k2_long if self.tidal else None])
 
         # scale results (send back totals at the end using these)
         max_mass = max_mass * self.mass0
