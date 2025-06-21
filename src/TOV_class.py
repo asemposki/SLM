@@ -491,7 +491,7 @@ class TOVsolver:
                 kind="linear",
                 fill_value="extrapolate",
             )
-
+        
         # storing values for all pressures to plot in `testTOV.ipynb`
         self.sols = []
         # loop over the TOV equations
@@ -570,7 +570,7 @@ class TOVsolver:
                               self.pres0 * sol[0][:index_mass],
                               self.mass0 * sol[1][:index_mass],
                               sol[2][:index_mass] if self.tidal else None])
-                            #   k2_long if self.tidal else None])
+                              # k2_long if self.tidal else None])
 
         # scale results (send back totals at the end using these)
         max_mass = max_mass * self.mass0
