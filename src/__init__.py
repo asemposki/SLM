@@ -31,4 +31,4 @@ MSEOS_TOV_PATH = os.path.join(TOV_PATH, "MSEOS")
 
 # SLM results path
 SLM_RES_MSEOS = os.path.join(RESULTS_PATH, "MSEOS")
-SLM_RES_QEOS = os.path.join(RESULTS_PATH, "QEOS")
+SLM_RES_QEOS = os.path.join(RESULTS_PATH, "Quarkies")

@@ -288,7 +288,8 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True, pres_init=Non
     dataArray = np.asarray(dataArray, dtype=np.float64)
 
     # Construct the output filename more robustly
-    name_parts = (os.path.basename(fileName).split("."))[0].split("_")
+    name_parts = ".".join((os.path.basename(fileName).split("."))[:-1]).split("_")
+    print(name_parts)
     print("Name parts:", name_parts)
     if len(name_parts) > 2:
         output_file_name = "MR_" + "_".join(name_parts[1:]) + ".dat"
