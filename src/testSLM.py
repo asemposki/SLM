@@ -29,13 +29,16 @@ from src import (
 )
 
 # set parameters for lambda and kappa
-lamVal = np.linspace(300, 500, 11)
-kappaVal = np.linspace(0.1, 0.3, 11)
+lamVal = np.linspace(300, 500, 20)
+kappaVal = np.linspace(0.1, 0.3, 10)
 Ls = np.linspace(0.0, 3e-3, 4)
 Lv = np.linspace(0.0, 3e-2, 4)
 zetaVal = np.linspace(1e-4, 2e-4, 2)
 xiVal = np.linspace(0.0, 1.0, 2)  # Original value in first file was 1.0, not 1e-4
 
+print(f"Total number of runs: {len(lamVal) * len(kappaVal)}")
+# lamVal = [363.16]
+# kappaVal = [0.23]
 
 def _run_system_command(command, cwd=None):
     """
@@ -66,7 +69,7 @@ def _generate_and_run_slm(
     # Construct file name and run SLM
     file_name = slm_file_name_format.format(*params)
     _run_system_command(
-        f"python SLM.py {file_name} {tidal} {parametric} {mseos}", cwd=SRC_DIR
+        f"python SLM.py {file_name} {tidal} {parametric} {mseos} {None}", cwd=SRC_DIR
     )
     os.chdir(current_dir)  # Ensure we are back in the original directory
 

@@ -4,7 +4,7 @@ import time
 import argparse
 import json
 from itertools import combinations_with_replacement
-from plotData import plot_parametric_old
+from plotData import plot_parametric
 from sklearn.preprocessing import StandardScaler
 import random
 
@@ -38,24 +38,63 @@ class ParametricDMD:
         #     out.append(X[i] * X[j] * X[k])
         return np.vstack(out)
 
-    def _SLM_auto_r(self, X, dt):
+    def _SLM_auto_r(self, X, dt, modes=None):
         n = X.shape[0]
         X_aug = self.augment_data(X)
         X1, X2 = X_aug[:, :-1], X_aug[:, 1:]
         U, S, Vt = np.linalg.svd(X1, full_matrices=False)
-        max_r = min(X1.shape) if self.max_r is None else min(self.max_r, min(X1.shape))
-        best = {"err": float("inf")}
-        for r in range(1, max_r + 1):
+        if modes is None:
+            max_r = min(X1.shape) if self.max_r is None else min(self.max_r, min(X1.shape))
+            best = {"err": float("inf")}
+            for r in range(1, max_r + 1):
+                U_r, S_r, V_r = U[:, :r], S[:r], Vt[:r, :]
+                S_r[S_r < 1e-12] = 1e-12
+                S_r_inv = np.diag(1.0 / S_r)
+                Atilde = U_r.T @ X2 @ V_r.T @ S_r_inv
+                if not np.all(np.isfinite(Atilde)):
+                    continue
+                try:
+                    D, W = np.linalg.eig(Atilde)
+                except np.linalg.LinAlgError:
+                    continue
+                Phi = X2 @ V_r.T @ S_r_inv @ W
+                omega = np.log(D) / dt
+                b = np.linalg.lstsq(Phi, X1[:, 0], rcond=None)[0]
+                t = np.arange(X1.shape[1] + 1) * dt
+                time_dynamics = b[:, np.newaxis] * np.exp(
+                    omega[:, np.newaxis] * t[np.newaxis, :]
+                )
+                Xdmd = (Phi @ time_dynamics)[:n, :]
+                err = np.max(np.abs(X - Xdmd))
+                if err < best["err"]:
+                    best = dict(
+                        r=r,
+                        D=D,
+                        U=U_r,
+                        W=W,
+                        V=V_r,
+                        S=S[:r],
+                        b=b,
+                        Atilde=Atilde,
+                        Phi=Phi,
+                        omega=omega,
+                        Xdmd=Xdmd,
+                        err=err,
+                    )
+                if err <= self.error_threshold:
+                    break
+        else:
+            r = modes
             U_r, S_r, V_r = U[:, :r], S[:r], Vt[:r, :]
             S_r[S_r < 1e-12] = 1e-12
             S_r_inv = np.diag(1.0 / S_r)
             Atilde = U_r.T @ X2 @ V_r.T @ S_r_inv
-            if not np.all(np.isfinite(Atilde)):
-                continue
-            try:
-                D, W = np.linalg.eig(Atilde)
-            except np.linalg.LinAlgError:
-                continue
+            # if not np.all(np.isfinite(Atilde)):
+            #     continue
+            # try:
+            D, W = np.linalg.eig(Atilde)
+            # except np.linalg.LinAlgError:
+            #     continue
             Phi = X2 @ V_r.T @ S_r_inv @ W
             omega = np.log(D) / dt
             b = np.linalg.lstsq(Phi, X1[:, 0], rcond=None)[0]
@@ -64,27 +103,24 @@ class ParametricDMD:
                 omega[:, np.newaxis] * t[np.newaxis, :]
             )
             Xdmd = (Phi @ time_dynamics)[:n, :]
-            err = np.max(np.abs(X - Xdmd))
-            if err < best["err"]:
-                best = dict(
-                    r=r,
-                    D=D,
-                    U=U_r,
-                    W=W,
-                    V=V_r,
-                    S=S[:r],
-                    b=b,
-                    Atilde=Atilde,
-                    Phi=Phi,
-                    omega=omega,
-                    Xdmd=Xdmd,
-                    err=err,
-                )
-            if err <= self.error_threshold:
-                break
+            # err = np.max(np.abs(X - Xdmd))
+            best = dict(r=r,
+                        D=D,
+                        U=U_r,
+                        W=W,
+                        V=V_r,
+                        S=S[:r],
+                        b=b,
+                        Atilde=Atilde,
+                        Phi=Phi,
+                        omega=omega,
+                        Xdmd=Xdmd,
+                        err=None
+                        )
+        print(best["r"])
         return best
 
-    def fit(self):
+    def fit(self, modes=None):
         params, results, valid_files, dmd_errors = [], [], [], []
         for file in self.fileList:
             data = np.loadtxt(os.path.join(self.filePath, file)).T
@@ -99,7 +135,7 @@ class ParametricDMD:
             X = np.log(data[:4] + epsilon) if self.tidal else np.log(data[:3] + epsilon)
             X = np.asarray(X, dtype=np.float64)
             dt = 1.0
-            result = self._SLM_auto_r(X, dt)
+            result = self._SLM_auto_r(X, dt, modes=modes)
             results.append(result)
             valid_files.append(file)
             dmd_errors.append(result["err"])
@@ -209,6 +245,7 @@ def main(
     distance_threshold=None,
     num_train_total=20,  # Total number of training samples
     num_boundary_train=10,  # Number of boundary samples for training
+    modes=None
 ):
     BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     TOV_DATA_PATH = os.path.join(BASE_PATH, "TOV_data")
@@ -243,14 +280,20 @@ def main(
         num_train_total = num_boundary_train + num_inside_train
 
     # Randomly sample from boundary and inside files
-    train_files_boundary = random.sample(boundary_files, num_boundary_train)
-    train_files_inside = random.sample(inside_files, num_inside_train)
-    train_files = train_files_boundary + train_files_inside
-    random.shuffle(train_files)  # Shuffle to mix boundary and inside files
+    # train_files_boundary = random.sample(boundary_files, num_boundary_train)
+    # train_files_inside = random.sample(inside_files, num_inside_train)
+    # train_files = train_files_boundary + train_files_inside
+    # random.shuffle(train_files)  # Shuffle to mix boundary and inside files
+    train_files = sorted(all_files)[::3]
+    print("train_files = ")
+    print(train_files)
 
     # The remaining files (not in train_files) can be considered for testing.
     # Filter out files that are already in train_files to avoid overlap.
-    test_files = [f for f in all_files if f not in train_files]
+    # test_files = [f for f in all_files if f not in train_files]
+    test_files = [f for f in sorted(all_files) if f not in train_files]
+    print("test_files = ")
+    print(test_files)
 
     # Ensure test_files directory exists and copy test files
     os.makedirs(TEST_DATA_PATH, exist_ok=True)
@@ -265,7 +308,7 @@ def main(
                 print(f"File copy failed for {file}: {e}")
 
     model = ParametricDMD(train_files, tov_data_path, tidal, error_threshold, max_r)
-    model.fit()
+    model.fit(modes=modes)
     time_dict = {}
     for file in os.listdir(TEST_DATA_PATH):
         if "MR" in file:
@@ -286,10 +329,19 @@ def main(
             name = "Data_" + "_".join(map(str, testParam))
             print(f"Names {name.split('_')}")
             print(f"Shape {Xdmd.shape} {X.shape}")
-            plot_parametric_old(Xdmd, X, name, tidal)
+            plot_parametric(Xdmd, X, name, tidal)
             print(f"plotted file: {name}")
             total_time = stoptime - starttime
             time_dict[file] = total_time
+            
+            data_name = f"{"SLM_"+"_".join(map(str, testParam))}"+".dat"
+            with open(os.path.join(TEST_DATA_PATH, data_name), "w") as file:
+                print(f"saving data to {data_name}")
+                np.savetxt(file, np.exp(Xdmd.real))
+            # MR_name =  f"{"MR_"+"_".join(map(str, testParam))}"+".dat"
+            # with open(os.path.join(TEST_DATA_PATH, MR_name), "w") as file:
+            #     print(f"saving data to {MR_name}")
+            #     np.savetxt(MR_name, data)
     with open(os.path.join(TEST_DATA_PATH, "slm_time_data.json"), "w") as file:
         json.dump(time_dict, file, indent=4, sort_keys=True)
 
@@ -333,6 +385,12 @@ if __name__ == "__main__":
         default=10,
         help="Number of training data sets to pick from the boundary.",
     )
+    parser.add_argument(
+        "--modes",
+        type=int,
+        default=None,
+        help="Fixes the number of modes used in the SLM.",
+    )
     args = parser.parse_args()
     main(
         args.tidal,
@@ -344,4 +402,5 @@ if __name__ == "__main__":
         args.distance_threshold,
         args.num_train_total,
         args.num_boundary_train,
+        args.modes
     )

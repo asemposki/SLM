@@ -331,7 +331,7 @@ class ParametricSLM:
         # Read data from the dmd files in dmdRes
         for file in self.fileList:
             print(f"fileName = {file}")
-            nameList = file.strip("MR.dat").split("_")
+            nameList = file.strip("MR.txt").split("_")
             params.append(nameList[2:])
             data = np.loadtxt(self.filePath + "/" + file).T
             print("Data", data.shape)
@@ -525,15 +525,16 @@ def main(tidal=False, mseos=False):
         tov_data_path = QEOS_TOV_PATH
 
     for file in os.listdir(tov_data_path):
-        fileList.append(file)
+        if file != ".DS_Store":
+            fileList.append(file)
 
     random.seed(48824)
     fileList = sorted(fileList)
     updatedFileList = [file for file in fileList[::3]]
     print(len(updatedFileList))
-    updatedFileList = updatedFileList[::4]
+    updatedFileList = updatedFileList[::3]
     # updatedFileList = random.sample(fileList, 20)
-    testFileList = [file for file in fileList[::5] if file not in updatedFileList]
+    testFileList = [file for file in fileList[::4] if file not in updatedFileList]
     print(len(testFileList))
     # testFileList = testFileList[::4]
     # testFileList = random.sample(fileList, 10)  # originally 10

@@ -1,6 +1,6 @@
 import os
 import sys
-from .recombination import *
+# from .recombination import *
 
 # Add base directory to sys path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
