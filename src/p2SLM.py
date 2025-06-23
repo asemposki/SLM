@@ -115,7 +115,7 @@ class ParametricDMD:
                         Phi=Phi,
                         omega=omega,
                         Xdmd=Xdmd,
-                        err=None
+                        err=0.
                         )
         print(best["r"])
         return best
