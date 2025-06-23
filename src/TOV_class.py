@@ -446,7 +446,7 @@ class TOVsolver:
 
         # initial pressure
         if pres_init is None:
-            pres_init = min(2.0, max(self.pres_array))
+            pres_init = min(2.0, max(self.pres_array) + 1)
         else:
             pres_init = pres_init
         # print(f"\npres_init = {pres_init}\n")
