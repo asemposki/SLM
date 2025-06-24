@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel", "sphinx"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,7 +10,7 @@ authors = [
     {name = "Johsua Maldonado"},
 ]
 description = "SLM is a python package for star log-extended emulation. It is based on DMD."
-license = {file = "LICENSE" }
+license = "GPL-3.0-or-later"
 readme = "README.md"
 requires-python = ">=3.9"
 version = "0.1.0"
@@ -23,18 +23,24 @@ dependencies = [
 ]
 
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License ::  LICENSE",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
+[tool.setuptools.packages.find] 
+where = ["src"]
+
+[tool.setuptools.package-data]
+"SLM" = ["EOS_Data/*"]
+
 [tool.black]
 line-length = 88
 target-version = ['py39']
 
-[project-urls]
+[project.urls]
 Homepage = "https://github.com/asempsoski/SLM"
 Documentation = "https://slm.readthedocs.io/en/latest/"
 Issues = "https://github.com/asemposki/slm/issues"

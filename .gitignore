@@ -9,3 +9,5 @@ TOV_data/
 EOS_files/
 Results/
 trainData/
+sites/*
+dist/
