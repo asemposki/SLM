@@ -280,11 +280,12 @@ def main(
         num_train_total = num_boundary_train + num_inside_train
 
     # Randomly sample from boundary and inside files
-    # train_files_boundary = random.sample(boundary_files, num_boundary_train)
-    # train_files_inside = random.sample(inside_files, num_inside_train)
-    # train_files = train_files_boundary + train_files_inside
-    # random.shuffle(train_files)  # Shuffle to mix boundary and inside files
-    train_files = sorted(all_files)[::3]
+    train_files_boundary = random.sample(boundary_files, num_boundary_train)
+    train_files_inside = random.sample(inside_files, num_inside_train)
+    train_files = train_files_boundary + train_files_inside
+    random.shuffle(train_files)  # Shuffle to mix boundary and inside files
+    # train_files = sorted(all_files[::-1])[::12]
+    train_files = ['MR_Quarkyonia_0.19_310.53.txt', 'MR_Quarkyonia_0.10_457.89.txt', 'MR_Quarkyonia_0.19_342.11.txt', 'MR_Quarkyonia_0.21_457.89.txt', 'MR_Quarkyonia_0.21_384.21.txt', 'MR_Quarkyonia_0.17_436.84.txt', 'MR_Quarkyonia_0.30_426.32.txt', 'MR_Quarkyonia_0.14_300.00.txt', 'MR_Quarkyonia_0.26_436.84.txt', 'MR_Quarkyonia_0.21_500.00.txt', 'MR_Quarkyonia_0.17_384.21.txt', 'MR_Quarkyonia_0.30_405.26.txt', 'MR_Quarkyonia_0.30_436.84.txt', 'MR_Quarkyonia_0.23_300.00.txt', 'MR_Quarkyonia_0.30_331.58.txt', 'MR_Quarkyonia_0.10_352.63.txt', 'MR_Quarkyonia_0.12_394.74.txt', 'MR_Quarkyonia_0.10_468.42.txt']
     print("train_files = ")
     print(train_files)
 
