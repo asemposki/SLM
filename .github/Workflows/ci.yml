@@ -3,9 +3,8 @@ name: CI
 on:
   push:
     branches:
-      - main # This will trigger on direct pushes AND PR merges to main
-
-  pull_request: # This defaults to opened, synchronize, and reopened
+      - main
+  pull_request:
     branches:
       - main
 
@@ -17,7 +16,8 @@ permissions:
 
 jobs:
   deploy:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    if: github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
     runs-on: ubuntu-latest
 
