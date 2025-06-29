@@ -11,7 +11,8 @@ You can find information on:
 - [Installation](installation.md)
 - [Usage Examples](usage.md)
 - [API Reference](api.md)
+- [Tutorials](tutorials/)
 
-## About My Package
+## About
 
 Star Log-extended eMulator (SLM) is a log-extended emulator based off of DMD.

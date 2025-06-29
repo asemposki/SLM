@@ -2,6 +2,8 @@ numpy
 matplotlib
 scipy
 statistics
+scienceplots
+scikit-learn
 mkdocstrings
 mkdocstrings-python>=1.1.2
 mkdocs-material>=9.1.18
