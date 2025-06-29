@@ -7,11 +7,9 @@ on:
     branches:
       - main # This will trigger on direct pushes AND PR merges to main
 
-  pull_request:
+  pull_request: # This defaults to opened, synchronize, and reopened
     branches:
       - main
-    types:
-      - closed
 
 # Grant necessary permissions for the GITHUB_TOKEN
 permissions:
