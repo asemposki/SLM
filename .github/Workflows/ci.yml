@@ -10,6 +10,7 @@ on:
   pull_request: # This defaults to opened, synchronize, and reopened
     branches:
       - main
+    types: closed
 
 # Grant necessary permissions for the GITHUB_TOKEN
 permissions:
@@ -36,9 +37,6 @@ jobs:
           cache: "pip" # Cache pip dependencies
 
       - name: Cache MkDocs build artifacts
-        # Using a fixed key is often better for a stable cache unless you frequently
-        # update MkDocs Material. `date --utc '+%V'` is for week number, which changes weekly.
-        # This cache helps speed up builds, but is not critical for deployment.
         id: cache-mkdocs-material
         uses: actions/cache@v4 # Changed to v4
         with:
@@ -52,8 +50,6 @@ jobs:
           python -m pip install --upgrade pip
           # Install all dependencies from requirements.txt
           pip install -r requirements.txt
-          # Install your Python package itself in editable mode.
-          # This is crucial for mkdocstrings to find your modules.
           pip install -e .
 
       - name: Build and deploy MkDocs
