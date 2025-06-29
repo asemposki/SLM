@@ -7,15 +7,8 @@
 import numpy as np
 from scipy.optimize import fsolve
 from scipy.interpolate import CubicSpline
-import os
 import sys
-import shutil
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-
-from src import MSEOS_PATH
+from ..config import get_paths
 
 
 class MSEOS:
@@ -43,6 +36,11 @@ class MSEOS:
         self.mr2 = self.mr * self.mr
         self.mw2 = self.mw * self.mw
         self.mmu2 = self.mmu * self.mmu
+
+        # Get the paths using the get_paths function from config.py
+        # By default, get_paths returns paths relevant to MSEOS if use_mseos is True, which is its default.
+        self.paths = get_paths()
+        self.mseos_output_dir = self.paths["mseos_path_specific"]
 
     # Define functions for solving integrals
     def _fg(self, data):
@@ -341,6 +339,11 @@ class MSEOS:
         gam1 = 2.0
         xf = (10.0, 10.0, 2e-3, 2e-3)
         ls = (zeta, xi)
+        paths = get_paths()
+        eos_data_dir = paths["eos_data_dir"]
+
+        mft_path = eos_data_dir / "MFT_ns6p.dat"
+        lowden = np.loadtxt(mft_path)
 
         [cs2, cw2, b, c] = fsolve(self._fcn, xf, args=ls)
         gs2 = cs2 * self.ms2
@@ -358,7 +361,7 @@ class MSEOS:
         fullEOS = self._MS_EOS(scvein, fields)
         fullEOS = fullEOS[:, 4:]
 
-        lowden = np.loadtxt("../EOS_Data/MFT_ns6p.dat")
+        lowden = np.loadtxt(mft_path)
         eLow, pLow, nbLow = lowden.T
         pLow = pLow[::-1]
         eLow = eLow[::-1]
@@ -373,8 +376,9 @@ class MSEOS:
         speedOfSound2 = np.hstack([cs2Low, speedOfSound2])
         fullEOS = np.array([nb2, eps2, pres2, speedOfSound2])
 
-        fixed_path = os.path.join(
-            MSEOS_PATH, f"EOS_MS_{Ls:.4f}_{Lv:.3f}_{zeta:.4f}_{xi:.1f}.txt"
+        # Use the class attribute for the MSEOS output directory and Path object concatenation
+        fixed_path = (
+            self.mseos_output_dir / f"EOS_MS_{Ls:.4f}_{Lv:.3f}_{zeta:.4f}_{xi:.1f}.txt"
         )
         fileName = out_file if out_file else fixed_path
 

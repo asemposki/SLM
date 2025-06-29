@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "SLM"
+name = "slmemulator"
 authors = [
     {name = "Sudhanva Lalit"},
     {name = "Alexandra Semposki"},
@@ -20,6 +20,7 @@ dependencies = [
     "pandas",
     "statistics",
     "matplotlib",
+    "scikit-learn",
 ]
 
 classifiers = [
@@ -34,7 +35,7 @@ classifiers = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-"SLM" = ["EOS_Data/*"]
+"slmemulator" = ["EOS_Data/*", "EOS_Codes/*"]
 
 [tool.black]
 line-length = 88

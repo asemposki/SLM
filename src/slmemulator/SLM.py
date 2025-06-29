@@ -1,46 +1,20 @@
 ###########################################
-# SLM code for the TOV data
+# slmemulator code for the TOV data
 # Author: Sudhanva Lalit
 # Last edited: 24 November 2024
 ###########################################
 
 import numpy as np
 import os
-import shutil
-import sys
-import json
 from itertools import combinations_with_replacement
-import time
-import importlib.resources as pkg_resources  # Already present, good!
-from TOV_class import TOVsolver
-from plotData import plot_eigs, plot_S, plot_dmd, plot_dmd_rad
+import importlib.resources as pkg_resources
+from .TOV_class import TOV  # Corrected to relative import
 
-# NEW: Import get_paths from your package's config module
-from SLM.config import get_paths  #
+from .config import get_paths  # Corrected to relative import
 
 # NEW: Define the importable path for internal EOS_Data
-_INTERNAL_EOS_DATA_PATH = "SLM.EOS_Data"  #
-
-
-# REMOVE THESE LINES, as they are no longer needed
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# if BASE_DIR not in sys.path:
-#     sys.path.insert(0, BASE_DIR)
-# from src import ( # This entire block should be removed
-#     SRC_DIR,
-#     EOS_CODES_DIR,
-#     EOS_DATA_DIR,
-#     EOS_FILES_DIR,
-#     RESULTS_PATH,
-#     TOV_PATH,
-#     PLOTS_PATH,
-#     MSEOS_PATH,
-#     QEOS_PATH,
-#     QEOS_TOV_PATH,
-#     MSEOS_TOV_PATH,
-#     SLM_RES_MSEOS,
-#     SLM_RES_QEOS,
-# )
+_INTERNAL_EOS_DATA_PATH = "slmemulator.EOS_Data"
+_SLM_PACKAGE_NAME = "slmemulator"
 
 p0 = 1.285e3
 
@@ -222,7 +196,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
             and mass.
     """
     # Get current paths from the config module
-    paths = get_paths()  #
+    paths = get_paths()
 
     eos_file_path = None
     tov_path_target = None
@@ -230,13 +204,16 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     if parametric is False:
         # Access EOS_Data as package resource
         try:
+            slm_package_base = pkg_resources.files(_SLM_PACKAGE_NAME)
             # Get a Path-like object to the EOS_Data file within the installed package
             eos_file_path = pkg_resources.files(_INTERNAL_EOS_DATA_PATH).joinpath(
                 fileName
             )
-            # When passing to TOVsolver, ensure it's a string path if the solver expects it
-            file = TOVsolver(str(eos_file_path), tidal=tidal)
-            tov_path_target = paths["tov_data_dir"]  #
+            eos_data_resource_dir = slm_package_base.joinpath("EOS_Data")
+            eos_file_path = eos_data_resource_dir.joinpath(fileName)
+            # When passing to TOV, ensure it's a string path if the solver expects it
+            file = TOV(str(eos_file_path), tidal=tidal)
+            tov_path_target = paths["tov_data_dir"]
         except FileNotFoundError:
             raise FileNotFoundError(
                 f"Internal EOS file '{fileName}' not found in package data."
@@ -244,18 +221,18 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
     else:
         # Access EOS_files from external configured path
         if mseos is True:
-            eos_file_path = paths["mseos_path"] / fileName  #
-            tov_path_target = paths["mseos_tov_path"]  #
+            eos_file_path = paths["mseos_path"] / fileName
+            tov_path_target = paths["mseos_tov_path"]
         else:
-            eos_file_path = paths["qeos_path"] / fileName  #
-            tov_path_target = paths["qeos_tov_path"]  #
-            print("Path:", eos_file_path)  #
+            eos_file_path = paths["qeos_path"] / fileName
+            tov_path_target = paths["qeos_tov_path"]
+            print("Path:", eos_file_path)
 
-        file = TOVsolver(str(eos_file_path), tidal=tidal)  # Pass as string path
+        file = TOV(str(eos_file_path), tidal=tidal)  # Pass as string path
 
     # Now tov_path_target is guaranteed to be assigned
-    if not os.path.exists(tov_path_target):  # Use os.path.exists with Path objects
-        os.makedirs(tov_path_target)  # Use os.makedirs with Path objects
+    if not tov_path_target.exists():
+        tov_path_target.mkdir(parents=True, exist_ok=True)
 
     file.tov_routine(verbose=False, write_to_file=False)
     print("R of 1.4 solar mass star: ", file.canonical_NS_radius())
@@ -279,176 +256,6 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
         output_file_name = "_".join(["MR", name_parts[0], "TOV"]) + ".txt"
 
     # Save directly to the target path without changing directory
-    output_full_path = tov_path_target / output_file_name  #
-    np.savetxt(output_full_path, dataArray.T, fmt="%1.8e")  #
-    # shutil.move is not needed if you save directly to the target path.
-    # If the file is created in CWD first (e.g. by another library), then uncomment:
-    # shutil.move(output_file_name, output_full_path)
+    output_full_path = tov_path_target / output_file_name
+    np.savetxt(output_full_path, dataArray.T, fmt="%1.8e")
     return dataArray
-
-
-def main(fileName, tidal=False, parametric=False, mseos=True):
-    r"""
-    Main function to run the SLM code. Solves the TOV equation and
-    computes the SLM modes.
-
-    Parameters:
-        fileName (str): Filename containing the EOS in the format nb (fm^-3),
-            E (MeV), P (MeV/fm^3)
-        svdSize_unused (int): This parameter is now unused as 'r' is automatically determined.
-        tidal (bool): Whether to include tidal deformability
-        parametric (bool): Whether the EOS is parametric
-        mseos (bool): Whether to use MSEOS
-
-    Returns:
-        linT (np.ndarray): Time vector
-        phi (np.ndarray): DMD modes
-        omega (np.ndarray): Continuous-time eigenvalues
-        lam (np.ndarray): Discrete-time eigenvalues
-        b (np.ndarray): DMD mode amplitudes
-        Xdmd (np.ndarray): DMD reconstruction
-        HFTime (float): Time taken for solving TOV
-        DMDTime (float): Time taken for DMD
-    """
-    startHFTime = time.time()
-    if tidal is True:
-        radius, pcentral, mass, tidal_def = solve_tov(
-            fileName, tidal, parametric, mseos
-        )
-    else:
-        radius, pcentral, mass = solve_tov(fileName, tidal, parametric, mseos)
-    endHFTime = time.time()
-
-    # Assign variables directly from the solve_tov output
-    r_orig = radius
-    p_orig = pcentral
-    m_orig = mass
-
-    linT = np.arange(len(p_orig))
-
-    # Prepare X for DMD, handling tidal deformability
-    X_list = [np.log(r_orig), np.log(p_orig), np.log(m_orig)]
-    if tidal is True:
-        X_list.append(np.log(tidal_def))
-    X = np.asarray(X_list, dtype=np.float64)
-
-    startDMDTime = time.time()
-    # Call SLM without svdSize, it will determine 'r' automatically
-    # Pass original X for error calculation
-    phi, omega, lam, b, Xdmd, S, r_auto = SLM(
-        X, (linT[-1] - linT[0]) / len(linT), error_threshold=1e-4
-    )  # Added error_threshold
-    endDMDTime = time.time()
-
-    # Extract real parts for plotting and reconstruction
-    rad_DMD = np.exp(Xdmd[0].real)
-    pres_DMD = np.exp(Xdmd[1].real)
-    mass_DMD = np.exp(Xdmd[2].real)
-
-    # Get paths for plotting
-    paths = get_paths()
-    plots_dir = paths["plots_dir"]  #
-    plots_dir.mkdir(parents=True, exist_ok=True)  # Ensure plots directory exists
-
-    # Make plots
-    # Plot the S values
-    plot_S(S, save_dir=plots_dir)  # Pass save_dir
-
-    # Plot the eigenvalues
-    plot_eigs(lam, filename="eigenValues.pdf", save_dir=plots_dir)  # Pass save_dir
-
-    # Plot the DMDs
-    fileNames = ["radiusDMD.png", "pressureDMD.png", "massDMD.png"]
-    ylabels = ["Radius (km) ", r"Pressure $(MeV/fm^3)$", r"Mass $M_{(\odot)}$"]
-    if tidal is True:
-        fileNames.append("tidalDMD.png")
-        ylabels.append(r"$\Lambda$")
-    plot_dmd(
-        linT, X, Xdmd, fileNames, ylabels, fileName, save_dir=plots_dir
-    )  # Pass save_dir
-
-    # Plot Mass vs Radius
-    ylabels_rad_plots = [r"Pressure $(MeV/fm^3)$", r"Mass $M_{(\odot)}$"]
-    newFiles = ["pressure_radius.png", "mass_radius.png"]
-    if tidal is True:
-        ylabels_rad_plots.append(r"$k_2$")
-        newFiles.append("tidal_radius.png")
-    plot_dmd_rad(
-        X, Xdmd, newFiles, ylabels_rad_plots, fileName, save_dir=plots_dir
-    )  # Pass save_dir
-
-    # maximum values
-    max_mass_DMD = np.max(mass_DMD)
-    # Using np.argmax for efficiency and robustness
-    max_index = np.argmax(mass_DMD)
-    max_radius_DMD = rad_DMD[max_index]
-
-    print(
-        "DMD Maximum mass: {}; maximum radius: {}".format(max_mass_DMD, max_radius_DMD)
-    )
-    HFTime = endHFTime - startHFTime
-    DMDTime = endDMDTime - startDMDTime
-    return linT, phi, omega, lam, b, Xdmd, HFTime, DMDTime
-
-
-def complex_encoder(obj):
-    r"""
-    Complex encoder for JSON serialization. Converts complex numbers to
-    real and imaginary parts.
-    """
-    if isinstance(obj, complex):
-        return {"__complex__": True, "real": obj.real, "imag": obj.imag}
-    raise TypeError("Type not serializable")
-
-
-if __name__ == "__main__":
-    argv = sys.argv
-    (fileName, tidal, parametric, mseos) = argv[1:]
-    nameList = os.path.basename(fileName).strip(".txt").split("_")
-    name = "SLM_" + "_".join(nameList[1:]) + ".txt"
-
-    t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
-        fileName, eval(tidal), eval(parametric), eval(mseos)
-    )
-
-    # Get paths for results
-    paths = get_paths()  #
-
-    # Determine output directory based on parametric and mseos flags
-    output_dir = paths["results_dir"]  # Default to general results directory
-    if eval(parametric) is True:
-        if eval(mseos) is True:
-            output_dir = paths["slm_res_mseos"]  #
-        else:
-            output_dir = paths["slm_res_qeos"]  #
-
-    if not output_dir.exists():  # Use Path.exists()
-        output_dir.mkdir(parents=True, exist_ok=True)  # Use Path.mkdir()
-
-    # REMOVED: os.chdir(output_dir) - Avoid changing the current working directory
-
-    # Prepare Xdmd for serialization, ensuring real parts and correct order
-    XdmdRes = np.exp(Xdmd.real)
-
-    data = dict()
-    data.update({"time": t.tolist()})
-    if len(nameList) > 2:
-        data.update({"val": nameList[2:]})
-    data.update({"phi": np.array(phi, dtype=np.complex64).tolist()})
-    data.update({"omega": omega.real.astype("float64").tolist()})
-    data.update({"lam": np.array(lam, dtype=np.complex64).tolist()})
-    data.update({"b": b.real.astype("float64").tolist()})
-    data.update(
-        {"Xdmd": XdmdRes.real.astype("float64").tolist()}
-    )  # Ensure real and float64
-    data.update({"hftime": HFTime})
-    data.update({"dmdtime": DMDTime})
-
-    serializable_data = json.dumps(
-        data, default=complex_encoder, sort_keys=True, indent=4
-    )
-    # Print the resolved output path instead of current working directory
-    output_file_full_path = output_dir / name  #
-    print("Output Path: ", output_file_full_path)  #
-    with open(output_file_full_path, "w") as file:  # Write directly to the full path
-        file.write(serializable_data)

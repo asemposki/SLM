@@ -4,17 +4,13 @@
 # Last edited: 24 November 2024
 ###########################################
 
-import numpy as np
 import sys
 import os
-import shutil
+import numpy as np
+from pathlib import Path
 from scipy.interpolate import CubicSpline
+from ..config import get_paths
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-
-from src import QEOS_PATH
 
 # Constants
 pi2 = np.pi**2
@@ -22,8 +18,6 @@ Nc = 3.0
 hc = 197.33
 hc2 = hc**2
 mnmev = 939
-# lam = 380.0 / hc
-# kap = 0.3
 n0 = 0.16
 a = -28.8
 b = 10.0
@@ -49,11 +43,20 @@ def eps(k, m):
     return pre * t
 
 
-def main(kap, lamInput, out_file=None):
+def generate_quarkyonia_eos(lamInput, kappa, output_filepath):
+    """
+    Generates Quarkyonia EOS data and writes it to a specified file.
+    """
     lam = lamInput / hc
+    kap = kappa
     kfmin = 0.25
     kfmax = 5.0
     kArray = np.linspace(kfmin, kfmax, 400)
+    # set paths
+    paths = get_paths()
+    eos_data_dir = paths["eos_data_dir"]
+    output_filepath = Path(output_filepath)
+    output_filepath.parent.mkdir(parents=True, exist_ok=True)
     # Initialize arrays
     epst = np.zeros(len(kArray))
     nbq = np.zeros(len(kArray))
@@ -131,7 +134,8 @@ def main(kap, lamInput, out_file=None):
 
     # Add lowden part
     # Read the lowdensity file
-    lowden = np.loadtxt("../EOS_Data/MFT_ns6p.dat")
+    mft_path = eos_data_dir / "MFT_ns6p.dat"
+    lowden = np.loadtxt(mft_path)  # Skip header if present
     eLow, pLow, nbLow = lowden.T
     pLow = pLow[::-1]
     eLow = eLow[::-1]
@@ -147,27 +151,40 @@ def main(kap, lamInput, out_file=None):
     cs2 = np.concatenate((cs2Low, cs2))
 
     nameList = "nb (fm^-1)   E (MeV)     P (MeV/fm^3)    cs2"
-    # fileName = f"EOS_Quarkyonia_{lamInput:.2f}_{kap:.2f}.dat"
-    fixed_path = os.path.join(QEOS_PATH, f"EOS_Quarkyonia_{kap:.2f}_{lamInput:.2f}.txt")
-    fileName = out_file if out_file else fixed_path
-    print(f"Saving Quarkyonia EOS to {fileName}...")
+
+    # Ensure the parent directory for the output file exists
+    output_filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    print(f"Saving Quarkyonia EOS to {output_filepath}...")
     np.savetxt(
-        fileName,
-        np.array([nbq, epst, press, cs2], dtype=np.float64).T,
+        output_filepath,
+        np.array([nbq, epst, press, cs2]).T,  # Transpose to save columns
         header=nameList,
+        delimiter="   ",
         fmt="%.6e",
     )
     # shutil.move(fileName, QEOS_PATH)
-    print(f"Quarkonia EOS saved to {QEOS_PATH}/{fileName}")
+    print(f"Quarkonia EOS saved to {output_filepath}")
 
 
 if __name__ == "__main__":
-    argv = sys.argv
-    # if len(argv) == 4:
-    #     kap, lam, out_file = argv[1:]
-    # else:
-    #     print("Usage: python Quarkyonia.py <kap> <lam> [<output_file>]")
-    #     sys.exit(1)
-    kap, lam = argv[1:]
-    main(float(kap), float(lam))
-    # main(float(kap), float(lam), out_file=out_file)
+    # Expects 3 command-line arguments: lambda_val, kappa_val, output_directory
+    if len(sys.argv) < 4:
+        print("Usage: python Quarkyonia.py <lambda_val> <kappa_val> <output_directory>")
+        sys.exit(1)
+
+    try:
+        lamVal = float(sys.argv[1])
+        kappaVal = float(sys.argv[2])
+        # The output_directory argument is passed as a string from testSLM.py
+        output_dir = Path(sys.argv[3])
+    except (ValueError, IndexError) as e:
+        print(f"Error parsing arguments: {e}")
+        print("Usage: python Quarkyonia.py <lambda_val> <kappa_val> <output_directory>")
+        sys.exit(1)
+
+    # Construct the full output file path within the specified output directory
+    output_file_name = f"MR_{lamVal:.2f}_{kappaVal:.2f}.txt"  # Consistent naming
+    full_output_filepath = output_dir / output_file_name
+
+    generate_quarkyonia_eos(lamVal, kappaVal, full_output_filepath)

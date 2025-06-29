@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
-Name: SLM
+Name: slmemulator
 Version: 0.1.0
 Summary: SLM is a python package for star log-extended emulation. It is based on DMD.
 Author: Sudhanva Lalit, Alexandra Semposki, Johsua Maldonado
@@ -20,6 +20,7 @@ Requires-Dist: scipy
 Requires-Dist: pandas
 Requires-Dist: statistics
 Requires-Dist: matplotlib
+Requires-Dist: scikit-learn
 Dynamic: license-file
 
 # Star Log-extended eMulation: SLM

@@ -13,7 +13,7 @@ from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
 
-class TOVsolver:
+class TOV:
 
     def __init__(
         self,
@@ -708,6 +708,14 @@ class TOVsolver:
             header = "Radius[km] Mass[Msol] Central_Pressure[MeV/fm3]"
             np.savetxt(file_name, tov_data, header=header, delimiter=" ")
 
+        if self.tidal is True:
+            return (
+                self.total_radius,
+                self.total_pres_central,
+                self.total_mass,
+                self.k2,
+                self.tidal_deformability,
+            )
         return self.total_radius, self.total_pres_central, self.total_mass
 
     def max_arrays(self):
