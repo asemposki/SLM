@@ -1,4 +1,3 @@
-#.github/Workflows/
 name: CI
 
 on:
