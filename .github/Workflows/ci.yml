@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: CI
 
 on:
@@ -6,18 +7,20 @@ on:
       - main
   pull_request:
     branches:
-      - main
+      - main # This will trigger for PR events, but the 'deploy' job's if condition will filter it.
 
-# Grant necessary permissions for the GITHUB_TOKEN
 permissions:
-  contents: write # Allows pushing to gh-pages branch
-  pages: write # Allows managing GitHub Pages deployments
-  id-token: write # Required for OIDC, often used with Pages
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    # This condition correctly captures pushes to main (including merges)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # The previous condition was also fine:
     # if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    # But relying solely on 'push' to main is simpler for deployment.
 
     runs-on: ubuntu-latest
 
@@ -25,19 +28,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for git-based MkDocs features
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # Changed to v5 for latest features/bug fixes
+        uses: actions/setup-python@v5
         with:
           python-version: 3.x
-          cache: "pip" # Cache pip dependencies
+          cache: "pip"
 
       - name: Cache MkDocs build artifacts
         id: cache-mkdocs-material
-        uses: actions/cache@v4 # Changed to v4
+        uses: actions/cache@v4
         with:
-          key: mkdocs-material-${{ hashFiles('requirements.txt') }} # Key based on requirements.txt hash
+          key: mkdocs-material-${{ hashFiles('requirements.txt') }}
           path: .cache
           restore-keys: |
             mkdocs-material-
@@ -45,7 +48,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install all dependencies from requirements.txt
           pip install -r requirements.txt
           pip install -e .
 
