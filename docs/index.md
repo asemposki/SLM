@@ -2,7 +2,7 @@
 
 Welcome to our documentation webpage for the Star Log-extended eMulator (SLM) package.
 
-<img align="right" width="250" src="../SLM_Logo.png">
+<img align="right" width="250" src="SLM_Logo.png">
 
 Welcome to the Star Log-extended eMulation (SLM) package! Here we provide open source code for implementing the emulators we developed for the Tolman-Oppenheimer-Volkoff (TOV) equations. These include:
 
