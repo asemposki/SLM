@@ -1,5 +1,3 @@
-# .github/workflows/ci.yml
-
 name: CI
 
 on:
@@ -12,31 +10,34 @@ on:
 
 # Grant necessary permissions for the GITHUB_TOKEN
 permissions:
-  contents: write # Allows checking out code and installing dependencies
-  pages: write    # Allows managing GitHub Pages deployments
-  id-token: write # Required for OIDC authentication for pages deployment
+  contents: write # Allows pushing to gh-pages branch
+  pages: write # Allows managing GitHub Pages deployments
+  id-token: write # Required for OIDC, often used with Pages
 
 jobs:
-  # This job builds your documentation
-  build:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Fetch all history for git-based MkDocs features
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5 # Changed to v5 for latest features/bug fixes
         with:
           python-version: 3.x
-          cache: "pip"
+          cache: "pip" # Cache pip dependencies
 
       - name: Cache MkDocs build artifacts
         id: cache-mkdocs-material
-        uses: actions/cache@v4
+        uses: actions/cache@v4 # Changed to v4
         with:
-          key: mkdocs-material-${{ hashFiles('requirements.txt') }}
+          key: mkdocs-material-${{ hashFiles('requirements.txt') }} # Key based on requirements.txt hash
           path: .cache
           restore-keys: |
             mkdocs-material-
@@ -44,27 +45,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # Install all dependencies from requirements.txt
           pip install -r requirements.txt
           pip install -e .
 
-      - name: Build MkDocs documentation
-        run: mkdocs build --clean # Just build, don't deploy here
-
-      # Upload the 'site' directory as an artifact for the deployment job
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Use v3
-        with:
-          path: ./site # The directory where MkDocs builds the static files
-
-  # This job deploys the artifact to GitHub Pages
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build # This job depends on the 'build' job completing successfully
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Only deploy on push to main
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4 # Use v4
+      - name: Build and deploy MkDocs
+        run: mkdocs gh-deploy --force --clean
