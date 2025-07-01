@@ -677,10 +677,10 @@ class TOVsolver:
         # if desired, write to a file
         if write_to_file is True:
             tov_data = np.column_stack(
-                [self.total_radius, self.total_mass, self.total_pres_central]
+                [self.total_radius, self.total_mass, self.total_pres_central, self.k2]
             )
             file_name = "TOV_data/rpm_results" + "_" + self.eos_name + ".dat"
-            header = "Radius[km] Mass[Msol] Central_Pressure[MeV/fm3]"
+            header = "Radius[km] Mass[Msol] Central_Pressure[MeV/fm3] k2"
             np.savetxt(file_name, tov_data, header=header, delimiter=" ")
 
         return self.total_radius, self.total_pres_central, self.total_mass

@@ -274,7 +274,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True, pres_init=Non
 
     # Replace the filename and run the code
     file = TOVsolver(eos_file, tidal=tidal)
-    file.tov_routine(verbose=False, write_to_file=False, pres_init=pres_init)
+    file.tov_routine(verbose=False, write_to_file=True, pres_init=pres_init)
     print("R of 1.4 solar mass star: ", file.canonical_NS_radius())
     dataArray = [
         file.total_radius.flatten(),
@@ -413,8 +413,8 @@ if __name__ == "__main__":
     argv = sys.argv
     # The svdSize argument is still passed from the command line, but now unused in main()
     (fileName, tidal, parametric, mseos, pres_init) = argv[1:]
-    nameList = os.path.basename(fileName).strip(".dat").split("_")
-    name = "SLM_" + "_".join(nameList[1:]) + ".dat"
+    nameList = ".".join(os.path.basename(fileName).split(".")[:-1]).split("_")
+    name = "SLM_" + "_".join(nameList) + ".dat"
     t, phi, omega, lam, b, Xdmd, HFTime, DMDTime = main(
         fileName, eval(tidal), eval(parametric), eval(mseos), eval(pres_init)
     )
