@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d
 
 class TOVsolver:
 
-    def __init__(self, eos_filepath=None, tidal=False, solver="RK4", solve_ivp_kwargs=None, sol_pts=4000):
+    def __init__(self, eos_filepath=None, tidal=False, solver="RK4", solve_ivp_kwargs=None, sol_pts=2500):
         r"""
         Class to calculate the Tolman-Oppenheimer-Volkoff equations,
         including options for the tidal deformability and moment of
@@ -443,7 +443,9 @@ class TOVsolver:
             self.total_max_mass (array): The array of total
                 maximum mass values.
         """
-
+        
+        time_initial = time.time()
+        
         # initial pressure
         if pres_init is None:
             pres_init = min(2.0, max(self.pres_array) + 1)
@@ -608,7 +610,11 @@ class TOVsolver:
             # "Tidal deformability at all points: {}".format(self.tidal_deformability)
             # )
             # print("k2 at all points: {}".format(self.k2))
-
+        
+        time_final = time.time()
+        
+        print(f" -> Solver runtime: {time_final - time_initial} sec")
+        
         if verbose is True:
             print("Max mass array: ", max_mass)
 
@@ -763,20 +769,34 @@ class TOVsolver:
 def main():
 
     filePath = os.getcwd().strip('src')
+    eos_names = []
     eosName = "sorted_Sly4.dat"
-    fileName = filePath + "/EOS_Data/" + eosName
+    eos_names.append(eosName)
+    eosName = "apr_eos.table"
+    eos_names.append(eosName)
+    eosName = "DS_CMF_eos.table"
+    eos_names.append(eosName)
+    eosName = "BL_eos.table"
+    eos_names.append(eosName)
+    eosName = "FSUGarnetNStarEOSA.txt"
+    eos_names.append(eosName)
+    
+    for eosName in eos_names:
+        fileName = filePath + "/EOS_Data/" + eosName
 
-    print(filePath + '/EOS_Data/')
+        print(f"running file {filePath + '/EOS_Data/' + eosName}:")
 
-    tov = TOVsolver(fileName, tidal=False)
-    start_time = time.time()
-    tov.tov_routine(verbose=True, write_to_file=False)
-    end_time = time.time()
-    print("Time: {} seconds".format(end_time - start_time))
+        tov = TOVsolver(fileName, tidal=True)
+        # start_time = time.time()
+        tov.tov_routine(verbose=False, write_to_file=True)
+        # end_time = time.time()
+        # print("-> Time: {} seconds".format(end_time - start_time))
 
-    print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
+        print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
 
-    print('Central density: ', tov.central_dens())
+        print('Central density: ', tov.central_dens())
+        
+        print("\n")
 
 if __name__ == "__main__":
     main()
