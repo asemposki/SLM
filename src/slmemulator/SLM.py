@@ -24,12 +24,11 @@ def augment_data_multiple_columns(X):
     Augment the data matrix X with nonlinear terms for multiple variables.
 
     Parameters:
-    X : np.ndarray
-        The data matrix where each row is a variable, and each column is a snapshot in time.
+        X (np.ndarray): The data matrix where each row is a variable, and each column 
+            is a snapshot in time.
 
     Returns:
-    augmented_X : np.ndarray
-        The augmented data matrix with nonlinear terms.
+        augmented_X (np.ndarray): The augmented data matrix with nonlinear terms.
     """
     n_variables, n_snapshots = X.shape
 
@@ -60,17 +59,16 @@ def SLM(X, dt, error_threshold=1e-4, max_r=None):
     Automatically determines the number of modes (r) based on an error threshold.
 
     Parameters:
-    X: np.ndarray
-        The data matrix where each row is a variable, and each column is a snapshot in time.
-        Expected to be log-transformed where appropriate.
-    dt: np.float
-        Delta T: the time difference of linear DMDs.
-    error_threshold: float, optional
-        The maximum allowed absolute difference between the original data and the DMD reconstruction.
-        Defaults to 1e-4.
-    max_r: int, optional
-        The maximum number of modes to consider. If None, it will go up to
-        the maximum possible rank (min(X.shape)).
+        X (np.ndarray): The data matrix where each row is a variable, and each column is a snapshot 
+            in time. Expected to be log-transformed where appropriate.
+        
+        dt (np.float): The time difference of linear DMDs.
+        
+        error_threshold (float): (Optional) The maximum allowed absolute difference between the 
+            original data and the DMD reconstruction. Defaults to 1e-4.
+        
+        max_r (int): (Optional) The maximum number of modes to consider. If None, it will go up to
+            the maximum possible rank (min(X.shape)).
     """
     n = X.shape[0]  # Original number of variables before augmentation
 

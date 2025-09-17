@@ -8,18 +8,15 @@ from matplotlib.legend_handler import HandlerLine2D
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator
 import numpy as np
 
-# import sys
-# sys.path.append('../buqeyenm/nuclear-matter-convergence/')  # decouple
-# from nuclear_matter.graphs import *
-# from nuclear_matter import fermi_momentum
+#### Code below taken from nuclear-matter-convergence repository at:
+#### https://github.com/buqeye/nuclear-matter-convergence.
+#### All credit to J. A. Melendez, C. Drischler, R. J. Furnstahl, and D. R. Phillips.
 
 
 def setup_rc_params(presentation=False):
     """Set matplotlib's rc parameters for the plots
-        Parameters
-        ----------
-        presentation : boolean
-            increases font size (more readable) for talks if enabled
+        Parameters:
+            presentation (boolean): Increases font size (more readable) for talks if enabled
     """
     if presentation:
         fontsize = 11
@@ -86,12 +83,11 @@ def setup_rc_params(presentation=False):
 def fermi_momentum(density, degeneracy):
     """Computes the Fermi momentum of infinite matter in inverse fermi
 
-    Parameters
-    ----------
-    density : array
-        The density in inverse fermi^3
-    degeneracy : int
-        The degeneracy factor [g]. Equals 2 for neutron matter and 4 for symmetric matter.
+    Parameters:    
+        density (array): The density in inverse fermi^3
+    
+        degeneracy (int): The degeneracy factor g. 2 for pure neutron matter 
+            and 4 for symmetric matter.
     """
     return (6 * np.pi**2 * density / degeneracy)**(1./3)
 

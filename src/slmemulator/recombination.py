@@ -16,7 +16,7 @@ def recombination_thinning(A_matrix, y_vector, initial_solution_x=None, toleranc
     Conceptual implementation of the recombination thinning process based on the paper.
     This function aims to find a sparse solution x' to the linear system Ax = y.
 
-    Args:
+    Parameters:
         A_matrix (np.array): The matrix A in the linear system Ax = y.
                              In the context of GRIM, this matrix relates features and
                              linear functionals.

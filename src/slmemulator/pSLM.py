@@ -55,11 +55,11 @@ class ParametricSLM:
         """
         Augments the input data X by adding quadratic terms (X_i * X_j).
 
-        Args:
+        Parameters:
             X (np.ndarray): Original data matrix (n, m).
 
         Returns:
-            np.ndarray: Augmented data matrix.
+            np.ndarray (np.ndarray): Augmented data matrix.
         """
         n, m = X.shape
         out = [X]
@@ -79,7 +79,7 @@ class ParametricSLM:
         - MSEOS: TOV_MS_ls_lv_zeta_xi
         - Quarkyonia: TOV_QEOS_lam_kappa
 
-        Args:
+        Parameters:
             filename_stem (str): The filename without extension (e.g., 'TOV_MS_0.00_0.00_1.00e-04_0.0').
             is_mseos_run (bool): True if the run is for MSEOS, False for Quarkyonia.
 
@@ -126,7 +126,7 @@ class ParametricSLM:
         """
         Performs Sparse Linear Modeling (SLM) with automatic determination of rank 'r'.
 
-        Args:
+        Parameters:
             X (np.ndarray): Data matrix (n_features, n_snapshots).
             dt (float): Time step between snapshots.
 
@@ -397,7 +397,7 @@ class ParametricSLM:
         Predicts the dynamics (Xdmd) for a given set of parameters by finding nearest neighbors
         in the parameter space and averaging their DMD components or using the closest one.
 
-        Args:
+        Parameters:
             param_values (list or np.ndarray): A list or array of parameter values to predict for
                                                          (e.g., [Ls, Lv, zeta, xi] for MSEOS). This argument is mandatory.
             k (int): Number of nearest neighbors to use for prediction.
