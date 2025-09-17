@@ -104,9 +104,8 @@ nav:
   - About:
       - Authors: authors.md
       - License: LICENSE
-  - Changelog: changelog.md
 
 repo_url: https://github.com/asemposki/SLM
 repo_name: asemposki/SLM
 edit_uri: edit/main/docs
-copyright: Copyright &copy; 2024 Sudhanva Lalit, Alexandra C. Semposki, and Joshua M. Maldonado. All rights reserved.
+copyright: Copyright &copy; 2025 Sudhanva Lalit, Alexandra C. Semposki, and Joshua M. Maldonado. All rights reserved.
