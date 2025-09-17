@@ -8,6 +8,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       members: true
       show_if_no_docstring: true
+      show_module_attributes: false
 
 ## Module: SLM
 
@@ -15,6 +16,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: cleanData
 
@@ -22,6 +24,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: config
 
@@ -29,6 +32,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: pSLM
 
@@ -36,6 +40,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: recombination
 
@@ -43,6 +48,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: scaledTOV
 
@@ -50,6 +56,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: scripts
 
@@ -57,6 +64,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: TOV_class
 
@@ -64,6 +72,7 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
 
 ## Module: tovScaledRev
 
@@ -71,3 +80,4 @@ This section provides a detailed reference for the `Star Log-extended eMulator` 
     options:
       show_if_no_docstring: true
       members: true
+      show_module_attributes: false
