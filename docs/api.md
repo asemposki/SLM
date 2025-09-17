@@ -1,15 +1,6 @@
 # API Reference
 
-This section provides a detailed reference for the `Star Log-extended eMulator` package.
-
-## slmemulator Package Overview
-
-::: slmemulator
-    options:
-      members: true
-      show_if_no_docstring: true
-      show_module_attributes: false
-      show_instance_attributes: false
+This section provides a detailed reference for the code in the `Star Log-extended eMulator` package.
 
 ## Module: SLM
 
