@@ -14,8 +14,6 @@ This section provides a detailed reference for the code in the `Star Log-extende
 
 ::: slmemulator.scaledTOV
 
-::: slmemulator.scripts
-
 ::: slmemulator.TOV_class
 
 ::: slmemulator.tovScaledRev
