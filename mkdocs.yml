@@ -63,8 +63,13 @@ plugins:
           paths:
             - src
           options:
+            show_root_heading: true
+            show_root_full_path: false
+            show_object_full_path: false
             show_source: true
             show_bases: false
+            members_order: source
+            show_inherited_members: false
             show_docstring_parameters: true
             show_signature_annotations: true
             merge_init_into_class: true
@@ -74,6 +79,7 @@ plugins:
             extra:
               render_module_root: true
               render_submodules: true
+              show_instance_attributes: false
   - mknotebooks:
       execute_notebooks: true
       notebook_extensions:

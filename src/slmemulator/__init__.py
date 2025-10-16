@@ -1,15 +1,16 @@
 import os
 import sys
-from .recombination import *
-from .SLM import *
-from .TOV_class import TOV
-from .plotData import *
-from .config import get_paths
-from .cleanData import *
-from .pSLM import *
-from .EOS_Codes import Quarkyonia, MSEOS
-from .EOS_Codes.Quarkyonia import generate_quarkyonia_eos
+# from .recombination import *
+# from .SLM import *
+# from .TOV_class import TOV
+# from .plotData import *
+# from .config import get_paths
+# from .cleanData import *
+# from .pSLM import *
+# from .EOS_Codes import Quarkyonia, MSEOS
+# from .EOS_Codes.Quarkyonia import generate_quarkyonia_eos
 
+# from . import *
 # Add base directory (project root) to sys path
 # If __file__ is /project_root/src/slmemulator/__init__.py,
 # then this correctly calculates /project_root/
