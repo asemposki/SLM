@@ -48,8 +48,6 @@ Our article based on this work was recently accepted in Phys. Rev. Research, but
     eprint = "2411.10556",
     archivePrefix = "arXiv",
     primaryClass = "astro-ph.HE",
-    month = "11",
-    year = "2024"
     doi = "10.1103/5p3h-b8rf",
     journal = "Phys. Rev. Res.",
     volume = "7",
