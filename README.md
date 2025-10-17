@@ -41,7 +41,6 @@ inside of the `tests` folder.
 @article{Lalit:2024vmu,
     author = "Lalit, Sudhanva and Semposki, Alexandra C. and Maldonado, Joshua M.",
     title = "{Star Log-extended eMulation: a method for efficient computation of the Tolman-Oppenheimer-Volkoff equations}",
-    title = "{Star Log-extended eMulation: A method for efficient computation of the Tolman-Oppenheimer-Volkoff equations}",
     eprint = "2411.10556",
     archivePrefix = "arXiv",
     primaryClass = "astro-ph.HE",
