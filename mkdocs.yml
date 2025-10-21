@@ -94,11 +94,8 @@ plugins:
 nav:
   - Home: index.md
   - Documentation:
-      - Overview:
-          - overview.md
+      - Installation:
           - installation.md
-          - usage.md
-          - examples.md
       - API Reference: api.md
   - Tutorials:
       - TOV Code: tutorials/TOV_code.ipynb
