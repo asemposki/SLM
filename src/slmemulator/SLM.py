@@ -16,6 +16,8 @@ from .config import get_paths  # Corrected to relative import
 _INTERNAL_EOS_DATA_PATH = "slmemulator.EOS_Data"
 _SLM_PACKAGE_NAME = "slmemulator"
 
+__all__ = ["SLM", "augment_data_multiple_columns", "solve_tov"]
+
 p0 = 1.285e3
 
 
