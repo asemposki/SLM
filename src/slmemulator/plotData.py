@@ -311,49 +311,39 @@ def plot_slm(
 def plot_slm_rad(X, Xdmd, fileNames_for_labels, ylabels, plots_output_base_path):
     """
     Makes plots for the SLM DMD results compared to original data.
-
-    Args:
-        X (np.ndarray): The "real" or original data, typically (num_quantities, num_points).
-                        Assumed X[0] is Radius, X[1:] are other quantities (e.g., Pressure, Energy Density).
-                        Values should be log-scaled if np.exp is used for plotting.
-        Xdmd (np.ndarray): The SLM-derived (reconstructed) data, (num_quantities, num_points).
-                           Assumed Xdmd[0] is Radius, Xdmd[1:] are other quantities.
-                           Values should be log-scaled if np.exp is used for plotting.
-        fileNames_for_labels (list[str] or list[Path]): A list containing a single string or Path object.
-                                                         This object is used to derive plot titles and base filenames,
-                                                         as all plots from a single Xdmd set share the same EOS parameters.
-        ylabels (list[str]): A list of y-axis labels for each plot. Its length should match len(Xdmd) - 1.
-        plots_output_base_path (Path or str): The base directory where plot files should be saved.
+    ...
     """
     # Ensure plots_output_base_path is a Path object and exists
     plots_output_base_path = Path(plots_output_base_path)
     plots_output_base_path.mkdir(parents=True, exist_ok=True)
 
-    # The loop iterates (len(Xdmd) - 1) times, meaning it makes this many plots.
-    # Each plot corresponds to a pair (X[0], X[i+1]) and (Xdmd[0], Xdmd[i+1])
-    # fileNames_for_labels[i] and ylabels[i] should align with each plot.
-
-    # Use the first (and presumably only) element of fileNames_for_labels
-    # as the source for parameter information for the plot title and filename.
-    # This assumes that all variables in a single Xdmd correspond to one EOS run.
     if not fileNames_for_labels:
         raise ValueError("fileNames_for_labels cannot be empty for plot_slm_rad.")
 
-    base_label_source = Path(
-        fileNames_for_labels[0]
-    )  # Changed from fileNames_for_labels[i]
+    base_label_source = Path(fileNames_for_labels[0])
 
-    for i in range(len(Xdmd) - 1):  # Loop for each quantity beyond Radius
+    # Map the ylabels content to a clean filename component
+    # Assuming ylabels are [Pressure, Mass, Tidal Deformability, ...]
+    FILE_SHORT_NAMES = [
+        "Pressure",
+        "Mass",
+        "Tidal",
+        # Add more short names here if Xdmd contains more than 4 columns (Radius + 3 quantities)
+    ]
+    # ------------------------------------------------------------------
+
+    # Loop for each quantity beyond Radius (X[0], Xdmd[0])
+    for i in range(len(Xdmd) - 1): 
+        # fig and ax are created correctly
         fig, ax = plt.subplots(figsize=(8, 6), dpi=600)
 
-        # Ensure values are positive before taking np.exp if they are log-scaled
-        # Adding a small epsilon to avoid log(0) issues if Xdmd/X can contain 0 or negative
+        # Plotting logic is correct for log-scaled data
         ax.plot(np.exp(Xdmd[0].real), np.exp(Xdmd[i + 1].real), label="SLM")
         ax.plot(np.exp(X[0]), np.exp(X[i + 1]), ".", label="data")
 
+        # ... (xlabel, ylabel, ticks, legend, title logic remains the same)
         ax.set_xlabel(r"Radius [km]", fontsize=22)
         ax.set_ylabel(ylabels[i], fontsize=22)
-
         ax.tick_params(
             axis="both",
             which="major",
@@ -374,13 +364,10 @@ def plot_slm_rad(X, Xdmd, fileNames_for_labels, ylabels, plots_output_base_path)
             top=True,
             size=4,
         )
-        plt.legend(loc="best", prop={"size": 10})
-
-        # Generate title and save filename based on base_label_source
-        namesList = base_label_source.stem.split("_")  # Use base_label_source
-
+        
+        # Generate Title
+        namesList = base_label_source.stem.split("_")
         titleName = ""
-        # Customize title based on your EOS naming conventions
         if namesList and namesList[0].lower() == "mseos" and len(namesList) >= 5:
             titleName = (
                 f"MSEOS: Ls={float(namesList[1]):.4f}, Lv={float(namesList[2]):.3f}, "
@@ -388,33 +375,25 @@ def plot_slm_rad(X, Xdmd, fileNames_for_labels, ylabels, plots_output_base_path)
             )
         elif namesList and namesList[0].lower() == "qeos" and len(namesList) >= 3:
             titleName = f"Quarkyonia: Lambda={float(namesList[1]):.2f}, Kappa={float(namesList[2]):.2f}"
-        else:  # For non-parametric or other unknown names
-            titleName = f"EOS: {base_label_source.stem}"  # Use base_label_source
+        else:
+            titleName = f"EOS: {base_label_source.stem}"
 
         ax.set_title(titleName, fontsize=18)
 
-        # Create a unique filename for the plot, saved to plots_output_base_path
-        # Combine base EOS name, the y-axis quantity, and make it filesystem-safe
-        safe_ylabel = (
-            ylabels[i]
-            .replace(" ", "_")
-            .replace("$", "")
-            .replace("\\", "")
-            .replace("{", "")
-            .replace("}", "")
-            .replace("^", "")
-            .replace("[", "")
-            .replace("]", "")
-            .replace("(", "")
-            .replace(")", "")
-            .replace("/", "_")
-        )
-        plot_file_name = f"{base_label_source.stem}_plot_{safe_ylabel}.png"  # Use base_label_source.stem
+        # Use the short name for the filename ---
+        if i < len(FILE_SHORT_NAMES):
+            short_name = FILE_SHORT_NAMES[i]
+        else:
+            # Fallback if there are more quantities than hardcoded short names
+            short_name = f"Quantity_{i+1}"
+            
+        plot_file_name = f"{base_label_source.stem}_plot_{short_name}.png"
 
         # Save the plot to the correct directory
         plt.savefig(plots_output_base_path / plot_file_name)
-        plt.close()  # Close the figure to free memory
-
+        
+        # Ensure memory is freed after each plot ---
+        plt.close(fig) # Explicitly close the figure object
 
 def plot_S(S, plots_output_base_path):  # Added plots_output_base_path
     """

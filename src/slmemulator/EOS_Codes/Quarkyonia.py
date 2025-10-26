@@ -54,7 +54,7 @@ def generate_quarkyonia_eos(lamInput, kappa, output_filepath):
     kArray = np.linspace(kfmin, kfmax, 400)
     # set paths
     paths = get_paths()
-    eos_data_dir = paths["eos_data_dir"]
+    eos_data_dir = paths["package_eos_data_dir"]
     output_filepath = Path(output_filepath)
     output_filepath.parent.mkdir(parents=True, exist_ok=True)
     # Initialize arrays

@@ -340,7 +340,7 @@ class MSEOS:
         xf = (10.0, 10.0, 2e-3, 2e-3)
         ls = (zeta, xi)
         paths = get_paths()
-        eos_data_dir = paths["eos_data_dir"]
+        eos_data_dir = paths["package_eos_data_dir"]
 
         mft_path = eos_data_dir / "MFT_ns6p.dat"
         lowden = np.loadtxt(mft_path)
