@@ -54,38 +54,28 @@ def get_paths(
     and specific subdirectories for results, plots, and test data related to
     SLM (Sparse Linear Modeling) or pSLM (parametric SLM) runs.
 
-    Parameters
-    ----------
-    output_base_dir : pathlib.Path, optional
-        The root directory where all generated project outputs (results, plots, 
-        test data) will be stored. If ``None``, the current working directory 
-        is implicitly used as the root for relative paths. Defaults to ``None``.
-    eos_name : str, optional
-        The name of the Equation of State (e.g., "MSEOS", "QEOS", "APR"). 
-        This name dictates the specific subdirectory created for the current run 
-        within the results, plots, and test directories. Defaults to "MSEOS".
-    is_parametric_run : bool, optional
-        Flag indicating if the current modeling run is using the parametric SLM 
-        (pSLM) approach. If ``True``, the output paths will typically include 
-        'pSLM'; otherwise, they'll use 'SLM'. Defaults to ``True``.
-    include_slm_paths : bool, optional
-        If ``True``, the dictionary will include the specific directories 
-        (``current_results_dir``, ``current_plots_dir``, ``current_test_dir``) 
-        related to the SLM/pSLM outputs. Defaults to ``True``.
+    Parameters:
+        output_base_dir (pathlib.Path, optional):
+            The root directory where all generated project outputs (results, plots, 
+            test data) will be stored. If ``None``, the current working directory 
+            is implicitly used as the root for relative paths. Defaults to ``None``.
+        eos_name (str, optional):
+            The name of the Equation of State (e.g., "MSEOS", "QEOS", "APR"). 
+            This name dictates the specific subdirectory created for the current run 
+            within the results, plots, and test directories. Defaults to "MSEOS".
+        is_parametric_run (bool, optional):
+            Flag indicating if the current modeling run is using the parametric SLM 
+            (pSLM) approach. If ``True``, the output paths will typically include 
+            'pSLM'; otherwise, they'll use 'SLM'. Defaults to ``True``.
+        include_slm_paths (bool, optional):
+            If ``True``, the dictionary will include the specific directories 
+            (``current_results_dir``, ``current_plots_dir``, ``current_test_dir``) 
+            related to the SLM/pSLM outputs. Defaults to ``True``.
 
-    Returns
-    -------
-    dict[str, pathlib.Path]
-        A dictionary containing all relevant path configurations. Keys include:
-
-        * ``output_base_dir``: The resolved base output path.
-        * ``data_input_dir``: Path to the general input data files.
-        * ``bin_dir``: Path to executable binaries (e.g., TOV solver).
-        * ``current_results_dir``: Directory for SLM/pSLM results for the given EOS.
-        * ``current_plots_dir``: Directory for SLM/pSLM plots for the given EOS.
-        * ``current_test_dir``: Directory for SLM/pSLM test data for the given EOS.
+    Returns:
+        dict[str, pathlib.Path]: A dictionary containing all relevant path configurations. Keys include:
     """
-    
+
     project_root = PROJECT_ROOT
     output_data_base = output_base_dir or project_root
     src_dir = project_root / DEFAULT_SRC_SUBDIR_NAME
@@ -204,21 +194,16 @@ def create_necessary_dirs(
     exist_ok=True, meaning it will create parent directories if necessary and
     will not raise an error if the directory already exists.
 
-    Parameters
-    ----------
-    paths : dict[str, pathlib.Path]
-        A dictionary where keys are string identifiers (e.g., 'output_path') 
-        and values are :class:`pathlib.Path` objects representing the directories 
-        to be created.
-    additional_dirs : list[pathlib.Path], optional
-        An optional list of additional :class:`pathlib.Path` objects representing 
-        directories to be created (e.g., user-managed data or model directories). 
-        The default is None.
+    Parameters:
+        paths (dict[str, pathlib.Path]): A dictionary where keys are string identifiers (e.g., 'output_path')
+            and values are :class:`pathlib.Path` objects representing the directories
+            to be created.
+        additional_dirs (list[pathlib.Path], optional): An optional list of additional :class:`pathlib.Path` objects representing
+            directories to be created (e.g., user-managed data or model directories). 
+            The default is None.
 
-    Returns
-    -------
-    None
-        The function modifies the filesystem but does not return a value.
+    Returns:
+        None: The function modifies the filesystem but does not return a value. 
 
     """
     

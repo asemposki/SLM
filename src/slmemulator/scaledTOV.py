@@ -3,7 +3,7 @@
 # Python TOV solver
 # Sudhanva Lalit: Date 02/14/2023
 
-""" Information about the code:
+""" 
 This code solves TOV equations for mass radius relations. This can also plot the mass-radius curve.
 
 USE: To use the code, here are the steps:
@@ -12,11 +12,12 @@ USE: To use the code, here are the steps:
 3) call the solver as tc.ToV.mass_radius(min_pressure, max_pressure)
 4) To plot, follow the code in main() on creating the dictionary of inputs
 
-Updates: Version 0.0.1-1
+Updates: 
 Solves ToV, can only take inputs of pressure (MeV/fm^3), energy density in MeV, baryon density in fm^-3
 in ascending order.
 """
 
+from typing import Union
 import numpy as np
 from scipy.integrate import odeint, solve_ivp
 from scipy.interpolate import interp1d
@@ -52,15 +53,46 @@ class TOV:
         self.radius = np.empty(self.imax)
         self.mass = np.empty(self.imax)
 
-    def pressure_from_nb(self, nb):
-        """Evaluate pressure from number density using interpolation"""
+    def pressure_from_nb(self, nb: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """
+        Evaluates scaled pressure ($P/P_0$) given the baryon number density ($n_B$) 
+        using linear interpolation of the loaded Equation of State (EOS) data.
+
+        This function uses :func:`scipy.interpolate.interp1d` to create an 
+        interpolating function based on the input baryon number density 
+        (:attr:`self.nb_in`) and scaled pressure (:attr:`self.p_in`) from the 
+        loaded EOS table.
+
+        Parameters:
+            nb (float or numpy.ndarray): The baryon number density (or an array of densities) at which to 
+            evaluate the corresponding scaled pressure.
+
+        Returns:
+            float or numpy.ndarray:
+            The interpolated scaled pressure ($P/P_0$) value(s) corresponding to 
+            the input number density ``nb``.
+        """
         p1 = interp1d(
             self.nb_in, self.p_in, axis=0, kind="linear", fill_value="extrapolate"
         )
         return p1(nb)
 
-    def energy_from_pressure(self, pressure):
-        """Evaluate energy density from pressure using interpolation"""
+    def energy_from_pressure(self, pressure: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """
+        Evaluates scaled energy density ($\epsilon/\epsilon_0$) given the scaled 
+        pressure ($P/P_0$) using linear interpolation of the loaded Equation of 
+        State (EOS) data.
+
+        This method handles pressures near zero with a special case for numerical stability.
+
+        Parameters:
+        pressure (float or numpy.ndarray): The scaled pressure ($P/P_0$) value(s) at which to evaluate the 
+            corresponding scaled energy density.
+
+        Returns:
+            float or numpy.ndarray: The interpolated scaled energy density ($\epsilon/\epsilon_0$) value(s).
+
+        """
         plow = 1e-10 / pres0
         if pressure < plow:
             return 2.6e-310
@@ -70,8 +102,22 @@ class TOV:
             )
             return e1(pressure)
 
-    def pressure_from_energy(self, energy):
-        """Evaluate pressure from energy density using interpolation"""
+    def pressure_from_energy(self, energy: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """
+        Evaluates scaled pressure ($P/P_0$) given the scaled energy density 
+        ($\epsilon/\epsilon_0$) using linear interpolation of the loaded 
+        Equation of State (EOS) data.
+
+        This function defines the inverse of the $\epsilon(P)$ relation.
+
+        Parameters:
+        energy (float or numpy.ndarray): The scaled energy density ($\epsilon/\epsilon_0$) value(s) at which 
+            to evaluate the corresponding scaled pressure.
+
+        Returns:
+            float or numpy.ndarray: The interpolated scaled pressure ($P/P_0$) value(s) corresponding to 
+            the input scaled energy density.
+        """
         p1 = interp1d(
             self.e_in, self.p_in, axis=0, kind="linear", fill_value="extrapolate"
         )
