@@ -2,6 +2,12 @@
 import os
 from pathlib import Path
 import importlib.resources as pkg_resources
+from typing import Dict, List, Optional
+
+__all__ = [
+    "get_paths",
+    "create_necessary_dirs",
+]
 
 # Define the project root based on config.py's location.
 # This assumes config.py is in src/SLM/, so it goes up three levels
@@ -18,6 +24,7 @@ DEFAULT_RESULTS_SUBDIR_NAME = "Results"
 DEFAULT_TOV_DATA_SUBDIR_NAME = "TOV_data"
 DEFAULT_TEST_DATA_SUBDIR_NAME = "testData" # This is the base for test/QEOS/pSLM
 DEFAULT_TRAIN_DATA_SUBDIR_NAME = "trainData"
+DEFAULT_VAL_DATA_SUBDIR_NAME = "valData"
 DEFAULT_DOCS_SUBDIR_NAME = "docs"
 DEFAULT_TESTS_SUBDIR_NAME = "tests"
 DEFAULT_TUTORIALS_SUBDIR_NAME = "Tutorials"
@@ -33,25 +40,52 @@ DEFAULT_SLM_SUBDIR_NAME = "SLM"
 
 
 def get_paths(
-    output_base_dir: Path = None,
+    output_base_dir: Optional[Path] = None,
     eos_name: str = "MSEOS",
     is_parametric_run: bool = True,
     include_slm_paths: bool = True,
-) -> dict:
+) -> Dict[str, Path]:
     """
-    Returns a dictionary of resolved paths for data input/output and other project directories.
-    All 'current' paths are dynamically set based on the provided 'eos_name'.
+    Generates and returns a dictionary of resolved project paths, dynamically 
+    structuring subdirectories based on the Equation of State (EOS) name and 
+    run configuration.
 
-    Args:
-        output_base_dir (Path, optional): The base directory for all generated outputs.
-        eos_name (str): The name of the Equation of State (e.g., "MSEOS", "QEOS", "APR").
-                        This name is used to create specific subdirectories. Defaults to "MSEOS".
-        is_parametric_run (bool): If True, affects result/plot/test subdirectories (pSLM vs SLM).
-        include_slm_paths (bool): If True, SLM-specific results, plots, and test directories are included.
+    The function provides paths for input data, model binaries, general output,
+    and specific subdirectories for results, plots, and test data related to
+    SLM (Sparse Linear Modeling) or pSLM (parametric SLM) runs.
 
-    Returns:
-        dict: A dictionary containing all relevant path configurations.
+    Parameters
+    ----------
+    output_base_dir : pathlib.Path, optional
+        The root directory where all generated project outputs (results, plots, 
+        test data) will be stored. If ``None``, the current working directory 
+        is implicitly used as the root for relative paths. Defaults to ``None``.
+    eos_name : str, optional
+        The name of the Equation of State (e.g., "MSEOS", "QEOS", "APR"). 
+        This name dictates the specific subdirectory created for the current run 
+        within the results, plots, and test directories. Defaults to "MSEOS".
+    is_parametric_run : bool, optional
+        Flag indicating if the current modeling run is using the parametric SLM 
+        (pSLM) approach. If ``True``, the output paths will typically include 
+        'pSLM'; otherwise, they'll use 'SLM'. Defaults to ``True``.
+    include_slm_paths : bool, optional
+        If ``True``, the dictionary will include the specific directories 
+        (``current_results_dir``, ``current_plots_dir``, ``current_test_dir``) 
+        related to the SLM/pSLM outputs. Defaults to ``True``.
+
+    Returns
+    -------
+    dict[str, pathlib.Path]
+        A dictionary containing all relevant path configurations. Keys include:
+
+        * ``output_base_dir``: The resolved base output path.
+        * ``data_input_dir``: Path to the general input data files.
+        * ``bin_dir``: Path to executable binaries (e.g., TOV solver).
+        * ``current_results_dir``: Directory for SLM/pSLM results for the given EOS.
+        * ``current_plots_dir``: Directory for SLM/pSLM plots for the given EOS.
+        * ``current_test_dir``: Directory for SLM/pSLM test data for the given EOS.
     """
+    
     project_root = PROJECT_ROOT
     output_data_base = output_base_dir or project_root
     src_dir = project_root / DEFAULT_SRC_SUBDIR_NAME
@@ -93,6 +127,7 @@ def get_paths(
         "user_eos_data_dir": output_data_base / DEFAULT_EOS_DATA_SUBDIR_NAME,
         "test_data_dir": output_data_base / DEFAULT_TEST_DATA_SUBDIR_NAME,
         "train_path": output_data_base / DEFAULT_TRAIN_DATA_SUBDIR_NAME,
+        "val_path": output_data_base / DEFAULT_VAL_DATA_SUBDIR_NAME,
         "generated_eos_files_dir": output_data_base / DEFAULT_EOS_FILES_SUBDIR_NAME,
         
         # Current Dynamic EOS/TOV/Generated paths
@@ -156,9 +191,35 @@ def get_paths(
     return final_paths
 
 
-def create_necessary_dirs(paths: dict, additional_dirs: list[Path] = None):
+def create_necessary_dirs(
+    paths: Dict[str, Path], 
+    additional_dirs: Optional[List[Path]] = None
+) -> None:
     """
-    Creates directories for specified output and user-managed data paths if they do not already exist.
+    Creates necessary directories specified in a dictionary and an optional list.
+
+    This function iterates through all Path objects provided in the input dictionary's
+    values and the optional list, ensuring that each directory is created if it
+    does not already exist. It uses pathlib.Path.mkdir with parents=True and
+    exist_ok=True, meaning it will create parent directories if necessary and
+    will not raise an error if the directory already exists.
+
+    Parameters
+    ----------
+    paths : dict[str, pathlib.Path]
+        A dictionary where keys are string identifiers (e.g., 'output_path') 
+        and values are :class:`pathlib.Path` objects representing the directories 
+        to be created.
+    additional_dirs : list[pathlib.Path], optional
+        An optional list of additional :class:`pathlib.Path` objects representing 
+        directories to be created (e.g., user-managed data or model directories). 
+        The default is None.
+
+    Returns
+    -------
+    None
+        The function modifies the filesystem but does not return a value.
+
     """
     
     # Define a list of keys corresponding to directories that should be created.
