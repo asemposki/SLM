@@ -340,6 +340,7 @@ def plot_slm_rad(
     fileNames_for_labels: List[Union[str, Path]],
     ylabels: List[str],
     plots_output_base_path: Union[str, Path],
+    save_to_file: bool = False,
 ) -> None:
     """
     Generates and saves plots comparing Star Log-extended Emulator (SLM) results 
@@ -457,12 +458,15 @@ def plot_slm_rad(
             
         plot_file_name = f"{base_label_source.stem}_plot_{short_name}.png"
 
-        # Save the plot to the correct directory
-        plt.savefig(plots_output_base_path / plot_file_name)
+        if save_to_file:
+            # Save the plot to the correct directory
+            plt.savefig(plots_output_base_path / plot_file_name)
+        else:
+            plt.show()
 
         plt.close(fig)  # Explicitly close the figure object
 
-def plot_S(S, plots_output_base_path):  # Added plots_output_base_path
+def plot_S(S, plots_output_base_path, save_to_file=False):  # Added plots_output_base_path
     """
     Plots the singular values from DMD.
 
@@ -478,7 +482,10 @@ def plot_S(S, plots_output_base_path):  # Added plots_output_base_path
     plt.yscale("log")
     plt.xlabel("Index")
     plt.ylabel("S values")
-    plt.savefig(plots_output_base_path / "Svalues.pdf")  # Updated save path
+    if save_to_file:
+        plt.savefig(plots_output_base_path / "Svalues.pdf")  # Updated save path
+    else:
+        plt.show()
     plt.close()  # Use close instead of cla for cleaner resource management
 
 
