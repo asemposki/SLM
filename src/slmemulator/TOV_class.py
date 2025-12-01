@@ -120,6 +120,11 @@ class TOV:
                 self.nB_array = eos_data["density"]
                 self.cs2_array = eos_data["cs2"]
 
+                # tidal considerations
+                if tidal is True:
+                    dpdeps = np.gradient(self.pres_array, self.eps_array, edge_order=2)
+                    self.cs2_array = dpdeps
+
             # print congrats
             print("Woo it worked!")
 
