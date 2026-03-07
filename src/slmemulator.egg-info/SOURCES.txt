@@ -46,4 +46,5 @@ src/slmemulator/EOS_Data/eos_tov_40n0.dat
 src/slmemulator/EOS_Data/sortedDD2YDelta.dat
 src/slmemulator/EOS_Data/sortedDSeos.dat
 src/slmemulator/EOS_Data/sorted_Sly4.dat
+tests/testSLM.py
 tests/test_TOV_class.py

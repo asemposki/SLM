@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from .scripts import setup_rc_params
 import numpy as np
 import os
+from typing import Tuple, List, Union
 
 # from .config import get_paths # No longer needed for global PLOTS_PATH
 
@@ -38,7 +39,6 @@ __all__ = [
     "plot_slm_rad",
     "plot_S",
     "plot_parametric",
-    "plot_parametric_old",
 ]
 
 # --- REMOVED GLOBAL PATH DEFINITION ---
@@ -55,23 +55,49 @@ mpl.rcParams["axes.linewidth"] = 1.5
 setup_rc_params()
 
 
-def _enforce_ratio(goal_ratio, supx, infx, supy, infy):
+def _enforce_ratio(
+    goal_ratio: float,
+    supx: float,
+    infx: float,
+    supy: float,
+    infy: float
+) -> Tuple[float, float, float, float]:
     """
-    Code used from pyDMD package to plot the eigenvalues.
-    Computes the right value of `supx,infx,supy,infy` to obtain the desired
-    ratio in :func:`plot_eigs`. Ratio is defined as
-    ::
-        dx = supx - infx
-        dy = supy - infy
-        max(dx,dy) / min(dx,dy)
+    Adjusts axis limits to achieve a desired aspect ratio for a plot.
 
-    :param float goal_ratio: the desired ratio.
-    :param float supx: the old value of `supx`, to be adjusted.
-    :param float infx: the old value of `infx`, to be adjusted.
-    :param float supy: the old value of `supy`, to be adjusted.
-    :param float infy: the old value of `infy`, to be adjusted.
-    :return tuple: a tuple which contains the updated values of
-        `supx,infx,supy,infy` in this order.
+    This function, adapted from the pyDMD package, calculates new supremum (sup) 
+    and infimum (inf) values for the x and y axes such that the ratio of the 
+    side lengths (dx / dy or dy / dx) in the resulting plot area does not 
+    exceed the specified ``goal_ratio``.
+
+    The ratio is defined as: $\\frac{\\max(dx, dy)}{\\min(dx, dy)}$, where 
+    $dx = supx - infx$ and $dy = supy - infy$.
+
+    Parameters
+    ----------
+    goal_ratio : float
+        The maximum desired ratio of the longer axis length to the shorter axis length.
+    supx : float
+        The current upper limit (supremum) of the x-axis.
+    infx : float
+        The current lower limit (infimum) of the x-axis.
+    supy : float
+        The current upper limit (supremum) of the y-axis.
+    infy : float
+        The current lower limit (infimum) of the y-axis.
+
+    Returns
+    -------
+    tuple[float, float, float, float]
+        A tuple containing the updated axis limits in the order:
+        ``(supx, infx, supy, infy)``.
+
+    Notes
+    -----
+    A small value ($1.0 \\times 10^{-16}$) is used to replace zero differences 
+    ($dx$ or $dy = 0$) to prevent division by zero errors when calculating the ratio.
+    The function expands the *shorter* axis symmetrically until the desired ratio
+    is met.
     """
 
     dx = supx - infx
@@ -308,52 +334,86 @@ def plot_slm(
         plt.close()
 
 
-def plot_slm_rad(X, Xdmd, fileNames_for_labels, ylabels, plots_output_base_path):
+def plot_slm_rad(
+    X: np.ndarray,
+    Xdmd: np.ndarray,
+    fileNames_for_labels: List[Union[str, Path]],
+    ylabels: List[str],
+    plots_output_base_path: Union[str, Path],
+    save_to_file: bool = False,
+) -> None:
     """
-    Makes plots for the SLM DMD results compared to original data.
+    Generates and saves plots comparing Star Log-extended Emulator (SLM) results 
+    against the original input data.
 
-    Args:
-        X (np.ndarray): The "real" or original data, typically (num_quantities, num_points).
-                        Assumed X[0] is Radius, X[1:] are other quantities (e.g., Pressure, Energy Density).
-                        Values should be log-scaled if np.exp is used for plotting.
-        Xdmd (np.ndarray): The SLM-derived (reconstructed) data, (num_quantities, num_points).
-                           Assumed Xdmd[0] is Radius, Xdmd[1:] are other quantities.
-                           Values should be log-scaled if np.exp is used for plotting.
-        fileNames_for_labels (list[str] or list[Path]): A list containing a single string or Path object.
-                                                         This object is used to derive plot titles and base filenames,
-                                                         as all plots from a single Xdmd set share the same EOS parameters.
-        ylabels (list[str]): A list of y-axis labels for each plot. Its length should match len(Xdmd) - 1.
-        plots_output_base_path (Path or str): The base directory where plot files should be saved.
+    Each quantity (Mass, Central Pressure, Tidal Deformability) is plotted 
+    versus Radius on a separate figure. The data is assumed to be in log-space 
+    and is converted to linear space using :func:`np.exp` before plotting.
+
+    Parameters
+    ----------
+    X : numpy.ndarray
+        The original data matrix. Assumed to be of shape (N_quantities, N_points).
+        The first row (X[0]) must contain the Radius data (in log-space).
+    Xdmd : numpy.ndarray
+        The reconstructed data matrix from the SLM-DMD model. Must have the 
+        same shape as X, with the first row (Xdmd[0]) being the Radius data 
+        (in log-space).
+    fileNames_for_labels : list[str or pathlib.Path]
+        A list of filenames used to generate the plot title and output filename. 
+        Only the first element (index 0) is used. The stem of this path is 
+        parsed to extract Equation of State (EOS) parameters for the plot title.
+    ylabels : list[str]
+        A list of labels for the y-axes of the plots (e.g., "Mass", "Central Pressure"). 
+        The length of this list must match the number of additional quantities 
+        ($N_{quantities} - 1$).
+    plots_output_base_path : str or pathlib.Path
+        The root directory where the generated plot images will be saved. 
+        Directories are created if they don't exist.
+
+    Returns
+    -------
+    None
+        The function saves plot files to the specified directory and returns nothing.
+
+    Raises
+    ------
+    ValueError
+        If ``fileNames_for_labels`` is an empty list.
+
+    Output Filenames
+    ----------------
+    Plots are saved in the format: ``<FileStem>_plot_<QuantityName>.png``
+    where ``<FileStem>`` comes from the first element of ``fileNames_for_labels``.
+    The ``<QuantityName>`` is derived from a hardcoded list ("Pressure", "Mass", "Tidal")
+    or a generic name if the index exceeds the list length.
+    
+    Titles are dynamically generated by parsing the ``FileStem`` based on 
+    known formats (e.g., 'MSEOS_Ls_Lv_zeta_xi', 'QEOS_Lambda_Kappa').
     """
+
     # Ensure plots_output_base_path is a Path object and exists
     plots_output_base_path = Path(plots_output_base_path)
     plots_output_base_path.mkdir(parents=True, exist_ok=True)
 
-    # The loop iterates (len(Xdmd) - 1) times, meaning it makes this many plots.
-    # Each plot corresponds to a pair (X[0], X[i+1]) and (Xdmd[0], Xdmd[i+1])
-    # fileNames_for_labels[i] and ylabels[i] should align with each plot.
-
-    # Use the first (and presumably only) element of fileNames_for_labels
-    # as the source for parameter information for the plot title and filename.
-    # This assumes that all variables in a single Xdmd correspond to one EOS run.
     if not fileNames_for_labels:
         raise ValueError("fileNames_for_labels cannot be empty for plot_slm_rad.")
 
-    base_label_source = Path(
-        fileNames_for_labels[0]
-    )  # Changed from fileNames_for_labels[i]
+    base_label_source = Path(fileNames_for_labels[0])
 
-    for i in range(len(Xdmd) - 1):  # Loop for each quantity beyond Radius
+    # Map the ylabels content to a clean filename component
+    FILE_SHORT_NAMES = [
+        "Pressure",
+        "Mass",
+        "Tidal",
+    ]
+    # Loop for each quantity beyond Radius (X[0], Xdmd[0])
+    for i in range(len(Xdmd) - 1): 
         fig, ax = plt.subplots(figsize=(8, 6), dpi=600)
-
-        # Ensure values are positive before taking np.exp if they are log-scaled
-        # Adding a small epsilon to avoid log(0) issues if Xdmd/X can contain 0 or negative
         ax.plot(np.exp(Xdmd[0].real), np.exp(Xdmd[i + 1].real), label="SLM")
         ax.plot(np.exp(X[0]), np.exp(X[i + 1]), ".", label="data")
-
         ax.set_xlabel(r"Radius [km]", fontsize=22)
         ax.set_ylabel(ylabels[i], fontsize=22)
-
         ax.tick_params(
             axis="both",
             which="major",
@@ -374,13 +434,10 @@ def plot_slm_rad(X, Xdmd, fileNames_for_labels, ylabels, plots_output_base_path)
             top=True,
             size=4,
         )
-        plt.legend(loc="best", prop={"size": 10})
-
-        # Generate title and save filename based on base_label_source
-        namesList = base_label_source.stem.split("_")  # Use base_label_source
-
+        
+        # Generate Title
+        namesList = base_label_source.stem.split("_")
         titleName = ""
-        # Customize title based on your EOS naming conventions
         if namesList and namesList[0].lower() == "mseos" and len(namesList) >= 5:
             titleName = (
                 f"MSEOS: Ls={float(namesList[1]):.4f}, Lv={float(namesList[2]):.3f}, "
@@ -388,35 +445,28 @@ def plot_slm_rad(X, Xdmd, fileNames_for_labels, ylabels, plots_output_base_path)
             )
         elif namesList and namesList[0].lower() == "qeos" and len(namesList) >= 3:
             titleName = f"Quarkyonia: Lambda={float(namesList[1]):.2f}, Kappa={float(namesList[2]):.2f}"
-        else:  # For non-parametric or other unknown names
-            titleName = f"EOS: {base_label_source.stem}"  # Use base_label_source
+        else:
+            titleName = f"EOS: {base_label_source.stem}"
 
         ax.set_title(titleName, fontsize=18)
 
-        # Create a unique filename for the plot, saved to plots_output_base_path
-        # Combine base EOS name, the y-axis quantity, and make it filesystem-safe
-        safe_ylabel = (
-            ylabels[i]
-            .replace(" ", "_")
-            .replace("$", "")
-            .replace("\\", "")
-            .replace("{", "")
-            .replace("}", "")
-            .replace("^", "")
-            .replace("[", "")
-            .replace("]", "")
-            .replace("(", "")
-            .replace(")", "")
-            .replace("/", "_")
-        )
-        plot_file_name = f"{base_label_source.stem}_plot_{safe_ylabel}.png"  # Use base_label_source.stem
+        # Use the short name for the filename ---
+        if i < len(FILE_SHORT_NAMES):
+            short_name = FILE_SHORT_NAMES[i]
+        else:
+            short_name = f"Quantity_{i+1}"
+            
+        plot_file_name = f"{base_label_source.stem}_plot_{short_name}.png"
 
-        # Save the plot to the correct directory
-        plt.savefig(plots_output_base_path / plot_file_name)
-        plt.close()  # Close the figure to free memory
+        if save_to_file:
+            # Save the plot to the correct directory
+            plt.savefig(plots_output_base_path / plot_file_name)
+        else:
+            plt.show()
 
+        plt.close(fig)  # Explicitly close the figure object
 
-def plot_S(S, plots_output_base_path):  # Added plots_output_base_path
+def plot_S(S, plots_output_base_path, save_to_file=False):  # Added plots_output_base_path
     """
     Plots the singular values from DMD.
 
@@ -432,7 +482,10 @@ def plot_S(S, plots_output_base_path):  # Added plots_output_base_path
     plt.yscale("log")
     plt.xlabel("Index")
     plt.ylabel("S values")
-    plt.savefig(plots_output_base_path / "Svalues.pdf")  # Updated save path
+    if save_to_file:
+        plt.savefig(plots_output_base_path / "Svalues.pdf")  # Updated save path
+    else:
+        plt.show()
     plt.close()  # Use close instead of cla for cleaner resource management
 
 

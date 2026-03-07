@@ -1,9 +1,17 @@
 # src/SLM/config.py
 import os
 from pathlib import Path
-import importlib.resources as pkg_resources  # New import
+import importlib.resources as pkg_resources
+from typing import Dict, List, Optional
 
-# Define the project root based on config.py's location
+__all__ = [
+    "get_paths",
+    "create_necessary_dirs",
+]
+
+# Define the project root based on config.py's location.
+# This assumes config.py is in src/SLM/, so it goes up three levels
+# to reach the top-level directory (e.g., the one containing cno, dmdcodes, src, etc.)
 PROJECT_ROOT = Path(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
@@ -14,8 +22,9 @@ DEFAULT_EOS_DATA_SUBDIR_NAME = "EOS_Data"
 DEFAULT_PLOTS_SUBDIR_NAME = "Plots"
 DEFAULT_RESULTS_SUBDIR_NAME = "Results"
 DEFAULT_TOV_DATA_SUBDIR_NAME = "TOV_data"
-DEFAULT_TEST_DATA_SUBDIR_NAME = "testData"
+DEFAULT_TEST_DATA_SUBDIR_NAME = "testData" # This is the base for test/QEOS/pSLM
 DEFAULT_TRAIN_DATA_SUBDIR_NAME = "trainData"
+DEFAULT_VAL_DATA_SUBDIR_NAME = "valData"
 DEFAULT_DOCS_SUBDIR_NAME = "docs"
 DEFAULT_TESTS_SUBDIR_NAME = "tests"
 DEFAULT_TUTORIALS_SUBDIR_NAME = "Tutorials"
@@ -26,158 +35,220 @@ DEFAULT_EOS_FILES_SUBDIR_NAME = "EOS_files"  # For generated/processed EOS files
 
 # Default subdirectory name for Parametric SLM results/plots
 DEFAULT_PSLM_SUBDIR_NAME = "pSLM"
-# NEW: Default subdirectory name for non-Parametric SLM results/plots
+# Default subdirectory name for non-Parametric SLM results/plots
 DEFAULT_SLM_SUBDIR_NAME = "SLM"
 
 
 def get_paths(
-    output_base_dir: Path = None,
-    use_mseos: bool = True,
+    output_base_dir: Optional[Path] = None,
+    eos_name: str = "MSEOS",
     is_parametric_run: bool = True,
-) -> dict:
+    include_slm_paths: bool = True,
+) -> Dict[str, Path]:
     """
-    Returns a dictionary of resolved paths for data input/output and other project directories.
-    Prioritizes explicit arguments for output_base_dir, then sensible defaults.
-    Conditionally sets 'current' EOS/TOV/results paths based on the use_mseos flag.
-    Adjusts base for general data directories (EOS_Data, TOV_data, testData, trainData)
-    to output_base_dir if provided (for local working directories),
-    otherwise defaults them to be under src_dir (for package internal use).
+    Generates and returns a dictionary of resolved project paths, dynamically 
+    structuring subdirectories based on the Equation of State (EOS) name and 
+    run configuration.
 
-    Args:
-        output_base_dir (Path, optional): The base directory for all generated outputs.
-                                         Defaults to the project root.
-        use_mseos (bool): If True, 'current' paths will point to MSEOS-related directories.
-                          If False, 'current' paths will point to QEOS-related directories.
-                          Defaults to True.
-        is_parametric_run (bool): If True, indicates a parametric run.
-                                  This parameter is available for future path logic,
-                                  but currently the primary factor for
-                                  data directory location is `output_base_dir`.
-                                  Defaults to True.
+    The function provides paths for input data, model binaries, general output,
+    and specific subdirectories for results, plots, and test data related to
+    SLM (Sparse Linear Modeling) or pSLM (parametric SLM) runs.
+
+    Parameters:
+        output_base_dir (pathlib.Path, optional):
+            The root directory where all generated project outputs (results, plots, 
+            test data) will be stored. If ``None``, the current working directory 
+            is implicitly used as the root for relative paths. Defaults to ``None``.
+        eos_name (str, optional):
+            The name of the Equation of State (e.g., "MSEOS", "QEOS", "APR"). 
+            This name dictates the specific subdirectory created for the current run 
+            within the results, plots, and test directories. Defaults to "MSEOS".
+        is_parametric_run (bool, optional):
+            Flag indicating if the current modeling run is using the parametric SLM 
+            (pSLM) approach. If ``True``, the output paths will typically include 
+            'pSLM'; otherwise, they'll use 'SLM'. Defaults to ``True``.
+        include_slm_paths (bool, optional):
+            If ``True``, the dictionary will include the specific directories 
+            (``current_results_dir``, ``current_plots_dir``, ``current_test_dir``) 
+            related to the SLM/pSLM outputs. Defaults to ``True``.
 
     Returns:
-        dict: A dictionary containing all relevant path configurations.
+        dict[str, pathlib.Path]: A dictionary containing all relevant path configurations. Keys include:
     """
-    # Use explicit output_base_dir or default to the calculated PROJECT_ROOT
-    output_base = output_base_dir or PROJECT_ROOT
 
-    # src_dir will always be under the primary base (output_base or PROJECT_ROOT)
-    src_dir = output_base / DEFAULT_SRC_SUBDIR_NAME
-
-    # Determine the base for general data directories (EOS_Data, TOV_data, testData, trainData)
-    # If output_base_dir is explicitly provided, these data directories should be
-    # relative to it. Otherwise, they remain within the src_dir of the package.
-    if output_base_dir is not None:
-        data_root_dir = output_base
-    else:
-        data_root_dir = src_dir
+    project_root = PROJECT_ROOT
+    output_data_base = output_base_dir or project_root
+    src_dir = project_root / DEFAULT_SRC_SUBDIR_NAME
+    
+    # Define extensions to strip
+    EXTENSIONS_TO_STRIP = [".txt", ".dat", ".table"]
+    
+    # Strip extensions and convert to uppercase for directory naming
+    clean_eos_name = eos_name
+    for ext in EXTENSIONS_TO_STRIP:
+        if clean_eos_name.lower().endswith(ext):
+            clean_eos_name = clean_eos_name[:-len(ext)]
+            break # Stop after stripping the first matching extension
+            
+    # --- Dynamic EOS-specific folder name, ensuring it's uppercase for directories ---
+    EOS_FOLDER_NAME = clean_eos_name.upper()
+    
+    # --- Define SLM subdirectory based on run type (SLM or pSLM) ---
+    SLM_SUBDIR = DEFAULT_PSLM_SUBDIR_NAME if is_parametric_run else DEFAULT_SLM_SUBDIR_NAME
 
     paths = {
-        "project_root": output_base,
+        "project_root": project_root,
         "src_dir": src_dir,
-        # EOS_Codes_dir should point to the location within the *installed package*
-        # This ensures that whether installed or in editable mode, it finds the right place.
-        "eos_codes_dir": pkg_resources.files("slmemulator").joinpath(
+        # Internal package resources (read-only)
+        "package_eos_codes_dir": pkg_resources.files("slmemulator").joinpath(
             DEFAULT_EOS_CODES_SUBDIR_NAME
         ),
-        "plots_dir": data_root_dir / DEFAULT_PLOTS_SUBDIR_NAME,
-        "results_dir": data_root_dir / DEFAULT_RESULTS_SUBDIR_NAME,
-        "docs_dir": output_base / DEFAULT_DOCS_SUBDIR_NAME,
-        "tests_dir": output_base / DEFAULT_TESTS_SUBDIR_NAME,
-        "tutorials_dir": output_base / DEFAULT_TUTORIALS_SUBDIR_NAME,
-        # Data directories whose location depends on `output_base_dir`
-        "eos_data_dir": data_root_dir
-        / DEFAULT_EOS_DATA_SUBDIR_NAME,  # For user-provided/existing EOS data
-        "tov_data_dir": data_root_dir / DEFAULT_TOV_DATA_SUBDIR_NAME,
-        "test_data_dir": data_root_dir / DEFAULT_TEST_DATA_SUBDIR_NAME,
-        "train_path": data_root_dir / DEFAULT_TRAIN_DATA_SUBDIR_NAME,
-        # EOS_files_dir contains generated EOS files (MSEOS/QEOS subdirs)
-        # This is where output of MSEOS.py/Quarkyonia.py goes, typically under src/
-        "eos_files_dir": data_root_dir / DEFAULT_EOS_FILES_SUBDIR_NAME,
-        "eos_data_dir": pkg_resources.files("slmemulator").joinpath(
+        "package_eos_data_dir": pkg_resources.files("slmemulator").joinpath(
             DEFAULT_EOS_DATA_SUBDIR_NAME
         ),
-        # Specific paths for QEOS and MSEOS (always defined relative to their respective bases)
-        "qeos_path_specific": (data_root_dir / DEFAULT_EOS_FILES_SUBDIR_NAME) / "QEOS",
-        "mseos_path_specific": (data_root_dir / DEFAULT_EOS_FILES_SUBDIR_NAME)
-        / "MSEOS",
-        # Correcting specific TOV data paths to use data_root_dir (for user data)
-        "qeos_tov_path_specific": (data_root_dir / DEFAULT_TOV_DATA_SUBDIR_NAME)
-        / "QEOS",
-        "mseos_tov_path_specific": (data_root_dir / DEFAULT_TOV_DATA_SUBDIR_NAME)
-        / "MSEOS",
-        # General SLM specific result/plot subdirectories (non-parametric)
-        "slm_res_mseos_specific": (
-            data_root_dir
-            / DEFAULT_RESULTS_SUBDIR_NAME
-            / "MSEOS"
-            / DEFAULT_SLM_SUBDIR_NAME
-        ),
-        "slm_res_qeos_specific": (
-            data_root_dir
-            / DEFAULT_RESULTS_SUBDIR_NAME
-            / "QEOS"
-            / DEFAULT_SLM_SUBDIR_NAME
-        ),
-        "slm_plots_mseos_specific": (
-            data_root_dir
-            / DEFAULT_PLOTS_SUBDIR_NAME
-            / "MSEOS"
-            / DEFAULT_SLM_SUBDIR_NAME
-        ),
-        "slm_plots_qeos_specific": (
-            data_root_dir / DEFAULT_PLOTS_SUBDIR_NAME / "QEOS" / DEFAULT_SLM_SUBDIR_NAME
-        ),
-        # Parametric SLM specific result/plot subdirectories
-        "slm_res_mseos_parametric_specific": (
-            data_root_dir
-            / DEFAULT_RESULTS_SUBDIR_NAME
-            / "MSEOS"
-            / DEFAULT_PSLM_SUBDIR_NAME
-        ),
-        "slm_res_qeos_parametric_specific": (
-            data_root_dir
-            / DEFAULT_RESULTS_SUBDIR_NAME
-            / "QEOS"
-            / DEFAULT_PSLM_SUBDIR_NAME
-        ),
-        "slm_plots_mseos_parametric_specific": (
-            data_root_dir
-            / DEFAULT_PLOTS_SUBDIR_NAME
-            / "MSEOS"
-            / DEFAULT_PSLM_SUBDIR_NAME
-        ),
-        "slm_plots_qeos_parametric_specific": (
-            data_root_dir
-            / DEFAULT_PLOTS_SUBDIR_NAME
-            / "QEOS"
-            / DEFAULT_PSLM_SUBDIR_NAME
-        ),
+        # General output directories
+        "plots_dir": output_data_base / DEFAULT_PLOTS_SUBDIR_NAME,
+        "results_dir": output_data_base / DEFAULT_RESULTS_SUBDIR_NAME,
+        "docs_dir": output_data_base / DEFAULT_DOCS_SUBDIR_NAME,
+        "tests_dir": output_data_base / DEFAULT_TESTS_SUBDIR_NAME,
+        "tutorials_dir": output_data_base / DEFAULT_TUTORIALS_SUBDIR_NAME,
+        
+        # User-managed/project-level EOS and TOV data
+        "user_eos_data_dir": output_data_base / DEFAULT_EOS_DATA_SUBDIR_NAME,
+        "test_data_dir": output_data_base / DEFAULT_TEST_DATA_SUBDIR_NAME,
+        "train_path": output_data_base / DEFAULT_TRAIN_DATA_SUBDIR_NAME,
+        "val_path": output_data_base / DEFAULT_VAL_DATA_SUBDIR_NAME,
+        "generated_eos_files_dir": output_data_base / DEFAULT_EOS_FILES_SUBDIR_NAME,
+        
+        # Current Dynamic EOS/TOV/Generated paths
+        "current_eos_input_dir": (
+            output_data_base / DEFAULT_EOS_FILES_SUBDIR_NAME
+        ) / EOS_FOLDER_NAME,
+        "current_tov_data_dir": (
+            output_data_base / DEFAULT_TOV_DATA_SUBDIR_NAME
+        ) / EOS_FOLDER_NAME,
+        
+        # Kept old names for minimal compatibility changes
+        "qeos_path_specific": (output_data_base / DEFAULT_EOS_FILES_SUBDIR_NAME) / "QEOS",
+        "mseos_path_specific": (output_data_base / DEFAULT_EOS_FILES_SUBDIR_NAME) / "MSEOS",
+        "qeos_tov_path_specific": (output_data_base / DEFAULT_TOV_DATA_SUBDIR_NAME) / "QEOS",
+        "mseos_tov_path_specific": (output_data_base / DEFAULT_TOV_DATA_SUBDIR_NAME) / "MSEOS",
+        "user_tov_data_dir": output_data_base / DEFAULT_TOV_DATA_SUBDIR_NAME,
     }
 
-    # Conditionally set the "current" paths based on the use_mseos flag AND `is_parametric_run`
-    if use_mseos:
-        paths["current_eos_input_dir"] = paths["mseos_path_specific"]
-        paths["current_tov_data_dir"] = paths["mseos_tov_path_specific"]
-        if is_parametric_run:
-            paths["current_slm_results_dir"] = paths[
-                "slm_res_mseos_parametric_specific"
-            ]
-            paths["current_slm_plots_dir"] = paths[
-                "slm_plots_mseos_parametric_specific"
-            ]
-        else:  # Non-parametric SLM run for MSEOS
-            paths["current_slm_results_dir"] = paths["slm_res_mseos_specific"]
-            paths["current_slm_plots_dir"] = paths["slm_plots_mseos_specific"]
-    else:  # QEOS
-        paths["current_eos_input_dir"] = paths["qeos_path_specific"]
-        paths["current_tov_data_dir"] = paths["qeos_tov_path_specific"]
-        if is_parametric_run:
-            paths["current_slm_results_dir"] = paths["slm_res_qeos_parametric_specific"]
-            paths["current_slm_plots_dir"] = paths["slm_plots_qeos_parametric_specific"]
-        else:  # Non-parametric SLM run for QEOS
-            paths["current_slm_results_dir"] = paths["slm_res_qeos_specific"]
-            paths["current_slm_plots_dir"] = paths["slm_plots_qeos_specific"]
+    # Conditionally add SLM-specific result/plot/test subdirectories
+    if include_slm_paths:
+        
+        # Define the dynamic current SLM results and plots paths
+        paths["current_slm_results_dir"] = (
+            output_data_base
+            / DEFAULT_RESULTS_SUBDIR_NAME
+            / EOS_FOLDER_NAME
+            / SLM_SUBDIR
+        )
+        paths["current_slm_plots_dir"] = (
+            output_data_base
+            / DEFAULT_PLOTS_SUBDIR_NAME
+            / EOS_FOLDER_NAME
+            / SLM_SUBDIR
+        )
 
-    # Ensure all paths are Path objects
-    return {k: Path(v) for k, v in paths.items()}
+        # --- NEW PATH: Dynamic SLM Test Data Path ---
+        if is_parametric_run:
+            # Only create the /pSLM folder for tests if it's a parametric run
+            paths["current_slm_tests_dir"] = (
+                output_data_base
+                / DEFAULT_TEST_DATA_SUBDIR_NAME
+                / EOS_FOLDER_NAME
+                / DEFAULT_PSLM_SUBDIR_NAME  # Always use 'pSLM' for parametric tests
+            )
+        else:
+            # If not parametric, use the base testData/EOS_NAME folder
+            paths["current_slm_tests_dir"] = (
+                output_data_base
+                / DEFAULT_TEST_DATA_SUBDIR_NAME
+                / EOS_FOLDER_NAME
+            )
+    
+    # Ensure all paths are Path objects and filter out any None/non-Path values
+    final_paths = {}
+    for k, v in paths.items():
+        if isinstance(v, Path):
+            final_paths[k] = v
+        elif include_slm_paths and k.startswith("current_slm_") and k in paths:
+             final_paths[k] = paths[k]
+
+    return final_paths
+
+
+def create_necessary_dirs(
+    paths: Dict[str, Path], 
+    additional_dirs: Optional[List[Path]] = None
+) -> None:
+    """
+    Creates necessary directories specified in a dictionary and an optional list.
+
+    This function iterates through all Path objects provided in the input dictionary's
+    values and the optional list, ensuring that each directory is created if it
+    does not already exist. It uses pathlib.Path.mkdir with parents=True and
+    exist_ok=True, meaning it will create parent directories if necessary and
+    will not raise an error if the directory already exists.
+
+    Parameters:
+        paths (dict[str, pathlib.Path]): A dictionary where keys are string identifiers (e.g., 'output_path')
+            and values are :class:`pathlib.Path` objects representing the directories
+            to be created.
+        additional_dirs (list[pathlib.Path], optional): An optional list of additional :class:`pathlib.Path` objects representing
+            directories to be created (e.g., user-managed data or model directories). 
+            The default is None.
+
+    Returns:
+        None: The function modifies the filesystem but does not return a value. 
+
+    """
+    
+    # Define a list of keys corresponding to directories that should be created.
+    output_directory_keys = [
+        "plots_dir",
+        "results_dir",
+        "docs_dir",
+        "tests_dir",
+        "tutorials_dir",
+        "user_eos_data_dir",
+        "user_tov_data_dir",
+        "test_data_dir",
+        "train_path",
+        "generated_eos_files_dir",
+        
+        # The 'current' paths are the effective targets, so ensure they are created
+        "current_eos_input_dir",
+        "current_tov_data_dir",
+        "current_slm_results_dir",
+        "current_slm_plots_dir",
+        "current_slm_tests_dir", # <-- ADDED NEW PATH
+        
+        # Kept for backward compatibility
+        "qeos_path_specific",
+        "mseos_path_specific",
+        "qeos_tov_path_specific",
+        "mseos_tov_path_specific",
+    ]
+
+    unique_dirs_to_create = set()
+    for key in output_directory_keys:
+        if key in paths and isinstance(paths[key], Path):
+            unique_dirs_to_create.add(paths[key])
+
+    # Add any explicitly provided additional directories
+    if additional_dirs:
+        for path_obj in additional_dirs:
+            if isinstance(path_obj, Path):
+                unique_dirs_to_create.add(path_obj)
+
+    for path in unique_dirs_to_create:
+        if not path.is_dir():
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+                print(f"Created directory: {path}")
+            except OSError as e:
+                print(f"Error creating directory {path}: {e}")

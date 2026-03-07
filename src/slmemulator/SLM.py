@@ -16,6 +16,8 @@ from .config import get_paths  # Corrected to relative import
 _INTERNAL_EOS_DATA_PATH = "slmemulator.EOS_Data"
 _SLM_PACKAGE_NAME = "slmemulator"
 
+__all__ = ["SLM", "augment_data_multiple_columns", "solve_tov"]
+
 p0 = 1.285e3
 
 
@@ -131,7 +133,7 @@ def SLM(X, dt, error_threshold=1e-4, max_r=None):
         # Using original X (log-transformed) for comparison
         current_error = np.max(np.abs(X - Xdmd_current_original_vars))
 
-        print(f"Testing r={r_current}: Max absolute error = {current_error:.6f}")
+        # print(f"Testing r={r_current}: Max absolute error = {current_error:.6f}")
 
         if current_error <= error_threshold:
             r_optimal = r_current
@@ -191,7 +193,7 @@ def solve_tov(fileName, tidal=False, parametric=False, mseos=True):
 
     Returns:
         dataArray (array): Data array containing radii, central pressure
-            and mass.
+            and mass (includes tidal deformability k_2 if set to true).
     """
     # Get current paths from the config module
     paths = get_paths()
