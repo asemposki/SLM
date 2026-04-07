@@ -11,7 +11,7 @@ import time
 import matplotlib.pyplot as plt
 
 from scipy.integrate import solve_ivp
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, CubicSpline
 
 
 class TOV:
@@ -22,7 +22,7 @@ class TOV:
         tidal=False,
         solver="RK4",
         solve_ivp_kwargs=None,
-        sol_pts=4000,
+        sol_pts=4000,  # this is a lot
     ):
         r"""
         Class to calculate the Tolman-Oppenheimer-Volkoff equations,
@@ -105,7 +105,17 @@ class TOV:
                 if len(eos_data[1]) > 3:
                     self.cs2_array = eos_data.T[3]
                 else:
-                    self.cs2_array = None
+                    if self.eps_array.ndim == 1:
+                        self.eps = self.eps_array[:, None]
+                    if self.pres_array.ndim == 1:
+                        self.pres = self.pres_array[:, None]
+                    
+                    self.cs2_array = np.zeros_like(self.eps)
+                    dpdeps = np.zeros_like(self.eps)
+                    for j in range(self.pres.shape[1]):
+                        dpdeps[:,j] = np.gradient(self.pres[:,j], self.eps[:,j], axis=0, 
+                                            edge_order=2)
+                    self.cs2_array = dpdeps
 
                 # keep unscaled for use in density calculation
                 self.pres_array_unscaled = eos_data.T[2]
@@ -129,7 +139,6 @@ class TOV:
                         dpdeps[:,j] = np.gradient(self.pres_array[:,j], self.eps_array[:,j], axis=0, 
                                             edge_order=2)
                     self.cs2_array = dpdeps
-                    print(self.cs2_array.shape)
 
             # new feature to handle h5 files
             elif self.eos_file_extension == ".h5":
@@ -141,22 +150,46 @@ class TOV:
                 # load data
                 with h5py.File(eos_filepath, "r") as f:
                     self.nB_array = f["dens"][:]
-                    eos_data = {}
-                    for group_name, group in f.items():
-                        if group_name == "dens":
-                            continue
-                        eos_data[group_name] = {k: v[:] for k, v in group.items()}
+                    self.eps_array = f["edens"][:] / self.eps0 
+                    self.pres_array = f["pressure"][:] / self.pres0
+                    #self.cs2_array = f["soundspeed"][:]
+                    self.cs2_array = np.zeros_like(self.eps_array)
+
+                    # do interpolation and then derivative
+                    dpdeps = np.zeros_like(self.pres_array)
+                    for j in range(self.pres_array.shape[1]):
+                        pres_interp = CubicSpline(self.nB_array[:, 0], self.pres_array[:, j], axis=0)
+                        eps_interp = CubicSpline(self.nB_array[:, 0], self.eps_array[:, j], axis=0)
+                    
+                        dP_dnB   = pres_interp.derivative()(self.nB_array[:, 0])
+                        dEps_dnB = eps_interp.derivative()(self.nB_array[:, 0])
+
+                        dpdeps[:, j] = dP_dnB / dEps_dnB
+                    
+                    # final array for cs2
+                    self.cs2_array = dpdeps
+
+
+                    # eos_data = {}
+                    # for group_name, group in f.items():
+                    #     if group_name == "dens":
+                    #         continue
+                    #     eos_data[group_name] = {k: v[:] for k, v in group.items()}
 
                 # parse the rest out of the groups
-                self.eps_array = eos_data["edens"]['samples'] / self.eps0
-                self.pres_array = eos_data["pressure"]['samples'] / self.pres0
-                self.cs2_array = eos_data["soundspeed"]['samples']
+                # self.eps_array = eos_data["edens"]['samples'] / self.eps0
+                # self.pres_array = eos_data["pressure"]['samples'] / self.pres0
+                # self.cs2_array = eos_data["soundspeed"]['samples']
                 
                 # keep unscaled for use in density calculation
-                self.pres_array_unscaled = eos_data['pressure']['samples']
+                #self.pres_array_unscaled = eos_data['pressure']['samples']
+                self.pres_array_unscaled = self.pres_array * self.pres0
+
+            # print the stuff out
+            print(self.cs2_array.shape)
 
             # print congrats
-            print("Woo it worked!")  ### this needs to be turned off for sampling 
+            print("Woo it worked!")
 
         else:
             raise ValueError("No file specified.")
@@ -343,7 +376,12 @@ class TOV:
             if self.tidal is True:
                 f = self.f_x(x, mass, pres, eps)
                 q = self.q_x(x, mass, pres, eps, cs2)
-                dydx = -(1.0 / x) * (y**2.0 + f * y + q)
+                
+                dydx = -(1.0 / x) * (y*y + f * y + q)
+
+                # check for invalid tidal run
+                # if not np.isfinite(dydx):
+                #     raise RuntimeError("Invalid tidal run.")
 
         else:
             dpdx = 0.0
@@ -825,7 +863,7 @@ class TOV:
             # interpolate the EOS to find the proper central densities
             p_n_interp = interp1d(
                 press[:,j],
-                self.nB_array,
+                self.nB_array[:,0],
                 kind="cubic",
                 fill_value="extrapolate",
             )
