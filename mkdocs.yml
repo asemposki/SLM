@@ -69,7 +69,6 @@ plugins:
             show_source: true
             show_bases: false
             members_order: source
-            show_inherited_members: false
             show_docstring_parameters: true
             show_signature_annotations: true
             merge_init_into_class: true
