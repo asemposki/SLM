@@ -1,10 +1,11 @@
 #######################################
 # TOV (High-Fidelity) Scaled Solver
 # Author: Alexandra C. Semposki
-# Last edited: 5 May 2025, by Sudhanva Lalit 1 June 2025
+# Last edited: 07 April 2026, by ACS
 #######################################
 
 import os
+import h5py
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -46,7 +47,7 @@ class TOV:
         Returns:
             None.
         """
-
+ 
         # assign class variables
         self.tidal = tidal
         self.solver = solver
@@ -118,20 +119,50 @@ class TOV:
                 self.eps_array = eos_data["edens"] / self.eps0
                 self.pres_array = eos_data["pres"] / self.pres0
                 self.nB_array = eos_data["density"]
-                self.cs2_array = eos_data["cs2"]
+                self.cs2_array = eos_data["cs2"]  # fix to set to None if not found
 
                 # tidal considerations
                 if tidal is True:
-                    dpdeps = np.gradient(self.pres_array, self.eps_array, edge_order=2)
+                    self.cs2_array = np.zeros_like(self.eps_array)
+                    dpdeps = np.zeros_like(self.eps_array)
+                    for j in range(len(self.eps_array.T)):
+                        dpdeps[:,j] = np.gradient(self.pres_array[:,j], self.eps_array[:,j], axis=0, 
+                                            edge_order=2)
                     self.cs2_array = dpdeps
+                    print(self.cs2_array.shape)
+
+            # new feature to handle h5 files
+            elif self.eos_file_extension == ".h5":
+                
+                # load the files
+                print("Loading EOS data from file: ", eos_filepath)
+                self.eos_file = eos_filepath
+
+                # load data
+                with h5py.File(eos_filepath, "r") as f:
+                    self.nB_array = f["dens"][:]
+                    eos_data = {}
+                    for group_name, group in f.items():
+                        if group_name == "dens":
+                            continue
+                        eos_data[group_name] = {k: v[:] for k, v in group.items()}
+
+                # parse the rest out of the groups
+                self.eps_array = eos_data["edens"]['samples'] / self.eps0
+                self.pres_array = eos_data["pressure"]['samples'] / self.pres0
+                self.cs2_array = eos_data["soundspeed"]['samples']
+                
+                # keep unscaled for use in density calculation
+                self.pres_array_unscaled = eos_data['pressure']['samples']
 
             # print congrats
-            print("Woo it worked!")
+            print("Woo it worked!")  ### this needs to be turned off for sampling 
 
         else:
             raise ValueError("No file specified.")
 
         return None
+
 
     # include the RK4 handwritten solver
     def RK4(self, f, x0, t0, te, N):
@@ -179,6 +210,7 @@ class TOV:
 
         return times, solution
 
+
     def RK2(self, f, x0, t0, te, N):
         r"""
         A simple RK2 solver using the Heun's method.
@@ -221,6 +253,7 @@ class TOV:
 
         return times, solution
 
+
     def euler(self, f, x0, t0, te, N):
         r"""
         A simple forward euler solver to avoid overhead of
@@ -262,6 +295,7 @@ class TOV:
         solution = np.asarray(solution, dtype=np.float64).T
 
         return times, solution
+
 
     def tov_equations_scaled(self, x, y0):
         r"""
@@ -323,6 +357,7 @@ class TOV:
 
         return np.array([dpdx, dmdx], dtype=np.float64)
 
+
     def f_x(self, x, mass, pres, eps):
         r"""
         A function in the tidal deformability calculation.
@@ -346,6 +381,7 @@ class TOV:
         one = 1.0 - (3.0 / 2.0) * (eps - pres) * x**2.0
         two = 1.0 - mass / x
         return one / two
+
 
     def q_x(self, x, mass, pres, eps, cs2):
         r"""
@@ -373,6 +409,7 @@ class TOV:
         two = mass + 3.0 * x**3.0 * pres
         three = x - mass
         return pre * one - (two / three) ** 2.0
+
 
     # love number equations and tidal deformability
     def tidal_def(self, yR, mass, radius):
@@ -431,6 +468,7 @@ class TOV:
 
         return tidal_deform, k2
 
+
     def tov_routine(self, verbose=False, write_to_file=False):
         r"""
         The TOV routine to solve each set of coupled ODEs and to output
@@ -458,8 +496,7 @@ class TOV:
             self.total_max_mass (array): The array of total
                 maximum mass values.
         """
-        # list for storing results
-        self.sols_varying_p0 = []
+
         # initial pressure
         pres_init = min(2.0, np.max(self.pres_array))  # Use np.max for clarity
         mass_init = 0.0
@@ -476,242 +513,253 @@ class TOV:
         if self.tidal is True:
             self.yR = np.zeros(len(x))
 
+        # check if reshaping is required
+        if self.pres_array.ndim == 1:
+            self.pres_array = self.pres_array.reshape(-1, 1)
+            self.eps_array = self.eps_array.reshape(-1, 1)
+            if self.cs2_array is not None:
+                self.cs2_array = self.cs2_array.reshape(-1, 1)
+
         # set up arrays for the final results
-        self.total_mass = np.zeros(len(x))
-        self.total_radius = np.zeros(len(x))
-        self.total_pres_central = np.zeros(len(x))
-
-        # set up arrays (impermanent so this will work)
-        max_mass = np.zeros(len(x))
-        pres_central = np.zeros(len(x))
-        max_radius = np.zeros(len(x))
-
-        # interpolate the energy density
-        self.eps_interp = interp1d(
-            self.pres_array,
-            self.eps_array,
-            axis=0,
-            kind="linear",
-            fill_value="extrapolate",
-        )
+        samples = len(self.pres_array.T)
+        self.total_mass = np.zeros([len(x), samples])
+        self.total_radius = np.zeros([len(x), samples])
+        self.total_pres_central = np.zeros([len(x), samples])
+        self.max_mass_arr = np.zeros([samples])
+        self.max_radius_arr = np.zeros([samples])
+        self.max_pres_arr = np.zeros([samples])
 
         if self.tidal is True:
-            self.cs2_interp = interp1d(
-                self.pres_array,
-                self.cs2_array,
+            self.tidal_deformability = np.zeros([len(x), samples])
+            self.k2 = np.zeros([len(x), samples])
+
+        # begin loop over draws
+        for j in range(samples):
+
+            # set up arrays (impermanent so this will work)
+            max_mass = np.zeros(len(x))
+            pres_central = np.zeros(len(x))
+            max_radius = np.zeros(len(x))
+
+            # interpolate the energy density
+            self.eps_interp = interp1d(
+                self.pres_array[:,j],
+                self.eps_array[:,j],
                 axis=0,
                 kind="linear",
                 fill_value="extrapolate",
             )
 
-        # loop over the TOV equations
-        for i in range(len(x)):
-            init_guess = []
-            # initial conditions
-            mass_arg = mass_init
-            pres_arg = pres_space[i]
-            init_guess.append(pres_arg)
-            init_guess.append(mass_arg)
-
             if self.tidal is True:
-                y_arg = y_init
-                init_guess.append(y_arg)
-
-            # Improve init_guess as one entry for all solutions
-            # high fidelity (four function evals per sol_pt)
-            if self.solver == "RK4":
-                xval, sol = self.RK4(
-                    self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
+                self.cs2_interp = interp1d(
+                    self.pres_array[:,j],
+                    self.cs2_array[:,j],
+                    axis=0,
+                    kind="linear",
+                    fill_value="extrapolate",
                 )
 
-            # low fidelity (two function evals per sol_pt)
-            elif self.solver == "RK2":
-                xval, sol = self.RK2(
-                    self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
-                )
+            # loop over the TOV equations
+            for i in range(len(x)):
+                init_guess = []
+                
+                # initial conditions
+                mass_arg = mass_init
+                pres_arg = pres_space[i]
+                init_guess.append(pres_arg)
+                init_guess.append(mass_arg)
 
-            # low fidelity (one function eval per sol_pt)
-            elif self.solver == "euler":
-                xval, sol = self.euler(
-                    self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
-                )
-
-            # adaptive (typically high fidelity)
-            elif self.solver == "solve_ivp":
-                if self.solve_ivp_kwargs is None:
-                    self.solve_ivp_kwargs = {
-                        "method": "RK45",
-                        "atol": 5e-14,
-                        "rtol": self.tol,
-                        "max_step": 0.01,
-                        "dense_output": True,
-                    }
                 if self.tidal is True:
-                    sol = solve_ivp(
-                        self.tov_equations_scaled,
-                        [1e-3, 2.5],
-                        [pres_arg, mass_arg, y_arg],
-                        **self.solve_ivp_kwargs,
+                    y_arg = y_init
+                    init_guess.append(y_arg)
+
+                # high fidelity (four function evals per sol_pt)
+                if self.solver == "RK4":
+                    xval, sol = self.RK4(
+                        self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
                     )
+
+                # low fidelity (two function evals per sol_pt)
+                elif self.solver == "RK2":
+                    xval, sol = self.RK2(
+                        self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
+                    )
+
+                # low fidelity (one function eval per sol_pt)
+                elif self.solver == "euler":
+                    xval, sol = self.euler(
+                        self.tov_equations_scaled, init_guess, 1e-3, 4.0, self.sol_pts
+                    )
+
+                # adaptive (typically high fidelity)
+                elif self.solver == "solve_ivp":
+                    if self.solve_ivp_kwargs is None:
+                        self.solve_ivp_kwargs = {
+                            "method": "RK45",
+                            "atol": 5e-14,
+                            "rtol": self.tol,
+                            "max_step": 0.01,
+                            "dense_output": True,
+                        }
+                    if self.tidal is True:
+                        sol = solve_ivp(
+                            self.tov_equations_scaled,
+                            [1e-3, 2.5],
+                            [pres_arg, mass_arg, y_arg],
+                            **self.solve_ivp_kwargs,
+                        )
+                    else:
+                        sol = solve_ivp(
+                            self.tov_equations_scaled,
+                            [1e-8, 2.5],
+                            [pres_arg, mass_arg],
+                            **self.solve_ivp_kwargs,
+                        )
+                    if not sol.success:
+                        print("Solver failed.")
+                        print(sol.message)
+                    xval = sol.t
+                    sol = sol.y
                 else:
-                    sol = solve_ivp(
-                        self.tov_equations_scaled,
-                        [1e-8, 2.5],
-                        [pres_arg, mass_arg],
-                        **self.solve_ivp_kwargs,
+                    raise ValueError(
+                        f'Solver, {self.solver} unknown. Must be "RK4", "RK2", "euler", or "solve_ivp".'
                     )
-                if not sol.success:
-                    print("Solver failed.")
-                    print(sol.message)
-                xval = sol.t
-                sol = sol.y
-            else:
-                raise ValueError(
-                    f'Solver, {self.solver} unknown. Must be "RK4", "RK2", "euler", or "solve_ivp".'
-                )
 
-            # maximum mass
-            # Find the index where pressure becomes very small (approaching zero)
-            # Use np.flatnonzero for more robust indexing
-            pressure_positive_indices = np.flatnonzero(sol[0] > 1e-10)
-            if pressure_positive_indices.size > 0:
-                index_mass = pressure_positive_indices[-1]
-                max_mass[i] = sol[1, index_mass]
-            else:
-                # Handle cases where pressure never goes above threshold or immediately drops
-                max_mass[i] = 0.0  # Or some other appropriate default
-                # print(f"Warning: Pressure did not stay positive for central pressure {pres_arg}")
+                # maximum mass
+                pressure_positive_indices = np.flatnonzero(sol[0] > 1e-10)
+                if pressure_positive_indices.size > 0:
+                    index_mass = pressure_positive_indices[-1]
+                    max_mass[i] = sol[1, index_mass]
+                else:
+                    # Handle cases where pressure never goes above threshold or immediately drops
+                    max_mass[i] = 0.0 
 
-            # central pressure
-            pres_central[i] = np.max(sol[0])
+                # central pressure
+                pres_central[i] = np.max(sol[0])
 
-            # maximum radius
-            max_radius[i] = xval[index_mass]
+                # maximum radius
+                max_radius[i] = xval[index_mass]
 
-            if self.tidal is True:
-                self.yR[i] = sol[2][index_mass]
+                if self.tidal is True:
+                    self.yR[i] = sol[2][index_mass]
 
-            # Collect the results for each central pressure
-            solns = np.column_stack(
-                [
-                    xval[: index_mass + 1] * self.rad0,  # radius
-                    sol[0][: index_mass + 1] * self.pres0,  # pressure
-                    sol[1][: index_mass + 1] * self.mass0,  # mass
-                    sol[2][: index_mass + 1] if self.tidal else None,
-                ],
-            )
-            self.sols_varying_p0.append(solns.T)
+            # scale results (send back totals at the end using these)
+            max_mass = max_mass * self.mass0
+            max_radius = max_radius * self.rad0
+            pres_central = pres_central * self.pres0
+            
+            # totals here
+            self.total_mass[:,j] = max_mass
+            self.total_radius[:,j] = max_radius
+            self.total_pres_central[:,j] = pres_central
 
-        # scale results (send back totals at the end using these)
-        max_mass = max_mass * self.mass0
-        max_radius = max_radius * self.rad0
-        pres_central = pres_central * self.pres0
-        self.total_mass = max_mass
-        self.total_radius = max_radius
-        self.total_pres_central = pres_central
-        # max mass calculation, radius, and central pressure
-        self.maximum_mass = np.max(max_mass)
-        corr_radius_index = np.where(max_mass == self.maximum_mass)[0][0]
-        self.corr_radius = max_radius[corr_radius_index]
-        self.corr_pres = pres_central[corr_radius_index]
+            # max mass calculation, radius, and central pressure
+            self.maximum_mass = np.max(max_mass)
+            corr_radius_index = np.where(max_mass == self.maximum_mass)[0][0]
+            self.corr_radius = max_radius[corr_radius_index]
+            self.corr_pres = pres_central[corr_radius_index]
 
-        # save these results
-        self.max_mass_arr = self.maximum_mass
-        self.max_radius_arr = self.corr_radius
-        self.max_pres_arr = self.corr_pres
+            # save these results
+            self.max_mass_arr[j] = self.maximum_mass
+            self.max_radius_arr[j] = self.corr_radius
+            self.max_pres_arr[j] = self.corr_pres
 
-        print(
-            "Max mass: ",
-            self.maximum_mass,
-            "Radius: ",
-            self.corr_radius,
-            "Central pressure: ",
-            self.corr_pres,
-        )
-
-        # tidal deformability
-        if self.tidal is True:
-            self.tidal_deformability, self.k2 = self.tidal_def(
-                self.yR, max_mass, max_radius
-            )
-            # print(
-            # "Tidal deformability at all points: {}".format(self.tidal_deformability)
-            # )
-            # print("k2 at all points: {}".format(self.k2))
-
-        if verbose is True:
-            print("Max mass array: ", max_mass)
-
-            # plot stuff
-            plt.plot(max_radius, max_mass, label=r"TOV")
-            # plt.plot(dense_rad, mrad_arr, label=r'Interpolant')
-            plt.xlabel("Radius [km]")
-            plt.ylabel("Max Mass [M_solar]")
-            plt.legend()
-            plt.show()
-            plt.plot(max_radius, pres_central)
-            plt.xlabel("Radius [km]")
-            plt.ylabel("Central pressure [MeV/fm^3]")
-            plt.show()
-
-            if self.tidal is True:
-                plt.plot(max_mass / max_radius, self.yR)
-                plt.xlabel(r"$\beta$")
-                plt.ylabel(r"y(r)")
-                plt.savefig("yr_scaled.png")
-                plt.show()
-                # fig = plt.figure(figsize=(8,6), dpi=200)
-                plt.plot(max_radius, self.tidal_deformability, color="k")
-                plt.xlabel("Radius", fontsize=14)
-                plt.ylabel(r"$\Lambda(R)$", fontsize=14)
-                plt.xticks(fontsize=12)
-                plt.yticks(fontsize=12)
-                plt.savefig("tidal.png")
-                plt.show()
-                # fig = plt.figure(figsize=(8,6), dpi=200)
-                plt.plot(max_mass, self.tidal_deformability, color="k")
-                plt.xlabel(r"Mass [$M_{\odot}$]", fontsize=14)
-                plt.ylabel(r"$\Lambda(M)$", fontsize=14)
-                plt.xticks(fontsize=12)
-                plt.yticks(fontsize=12)
-                plt.savefig("tidal_mass.png")
-                plt.show()
-                # fig = plt.figure(figsize=(8,6), dpi=200)
-                plt.plot(max_mass / max_radius, self.k2, color="k")
-                plt.xticks(fontsize=12)
-                plt.yticks(fontsize=12)
-                plt.xlabel(r"$\beta$", fontsize=14)
-                plt.ylabel(r"$k_{2}(\beta)$", fontsize=14)
-                plt.savefig("k2.png")
-                plt.show()
-                # fig = plt.figure(figsize=(8,6), dpi=200)
-                plt.plot(max_radius, self.k2, color="k")
-                plt.xticks(fontsize=12)
-                plt.yticks(fontsize=12)
-                plt.xlabel(r"$R$ [km]", fontsize=14)
-                plt.ylabel(r"$k_{2}(R)$", fontsize=14)
-                plt.xlim(9.0, 15.0)
-                plt.savefig("k2R.png")
-                plt.show()
-
-            # check the solution
             print(
+                "Max mass: ",
+                self.maximum_mass,
                 "Radius: ",
                 self.corr_radius,
-                "Maximum mass: ",
-                self.maximum_mass,
                 "Central pressure: ",
                 self.corr_pres,
             )
 
-        # if desired, write to a file
+            # tidal deformability
+            if self.tidal is True:
+                tidal_deformability_draw, k2_draw = self.tidal_def(
+                    self.yR, max_mass, max_radius
+                )
+
+                # save each draw to the bigger array
+                self.tidal_deformability[:,j] = tidal_deformability_draw
+                self.k2[:,j] = k2_draw
+
+            if verbose is True:
+                # plot MR curve
+                plt.plot(max_radius, max_mass, label=r"TOV")
+                plt.xlabel("Radius [km]")
+                plt.ylabel("Max Mass [M_solar]")
+                plt.legend()
+                plt.show()
+
+                # plot pressure vs. radius
+                plt.plot(max_radius, pres_central)
+                plt.xlabel("Radius [km]")
+                plt.ylabel("Central pressure [MeV/fm^3]")
+                plt.show()
+
+                if self.tidal is True:
+                    # plot the tidal result vs. compactness
+                    plt.plot(max_mass / max_radius, self.yR)
+                    plt.xlabel(r"$\beta$")
+                    plt.ylabel(r"y(r)")
+                    plt.savefig("yr_scaled.png")
+                    plt.show()
+
+                    # plot tidal vs. radius
+                    plt.plot(max_radius, self.tidal_deformability, color="k")
+                    plt.xlabel("Radius", fontsize=14)
+                    plt.ylabel(r"$\Lambda(R)$", fontsize=14)
+                    plt.xticks(fontsize=12)
+                    plt.yticks(fontsize=12)
+                    plt.savefig("tidal.png")
+                    plt.show()
+
+                    # plot tidal vs. mass
+                    plt.plot(max_mass, self.tidal_deformability, color="k")
+                    plt.xlabel(r"Mass [$M_{\odot}$]", fontsize=14)
+                    plt.ylabel(r"$\Lambda(M)$", fontsize=14)
+                    plt.xticks(fontsize=12)
+                    plt.yticks(fontsize=12)
+                    plt.savefig("tidal_mass.png")
+                    plt.show()
+
+                    # plot Love number vs. compactness
+                    plt.plot(max_mass / max_radius, self.k2, color="k")
+                    plt.xticks(fontsize=12)
+                    plt.yticks(fontsize=12)
+                    plt.xlabel(r"$\beta$", fontsize=14)
+                    plt.ylabel(r"$k_{2}(\beta)$", fontsize=14)
+                    plt.savefig("k2.png")
+                    plt.show()
+
+                    # plot Love number vs. radius
+                    plt.plot(max_radius, self.k2, color="k")
+                    plt.xticks(fontsize=12)
+                    plt.yticks(fontsize=12)
+                    plt.xlabel(r"$R$ [km]", fontsize=14)
+                    plt.ylabel(r"$k_{2}(R)$", fontsize=14)
+                    plt.xlim(9.0, 15.0)
+                    plt.savefig("k2R.png")
+                    plt.show()
+            
+        # if desired, write to an npz file (NO SCRIPTS ALLOWED)
         if write_to_file is True:
-            tov_data = np.column_stack(
-                [self.total_radius, self.total_mass, self.total_pres_central]
-            )
-            file_name = "TOV_data/rpm_results" + "_" + self.eos_name + ".txt"
-            header = "Radius[km] Mass[Msol] Central_Pressure[MeV/fm3]"
-            np.savetxt(file_name, tov_data, header=header, delimiter=" ")
+
+            # make sure the directory exists
+            os.makedirs("TOV_data", exist_ok=True)
+
+            # save as an npz file to avoid draw issues
+            if self.tidal is True:
+                file_name = "TOV_data/rpm_results" + "_" + self.eos_name
+                np.savez(file_name, radius=self.total_radius, 
+                         mass=self.total_mass, 
+                         pressure_central=self.total_pres_central, k2=self.k2,
+                         tidal=self.tidal_deformability)
+            else:
+                file_name = "TOV_data/rpm_results" + "_" + self.eos_name
+                np.savez(file_name, radius=self.total_radius, 
+                         mass=self.total_mass, 
+                         pressure_central=self.total_pres_central)
 
         if self.tidal is True:
             return (
@@ -721,7 +769,9 @@ class TOV:
                 self.k2,
                 self.tidal_deformability,
             )
+        
         return self.total_radius, self.total_pres_central, self.total_mass
+
 
     def max_arrays(self):
         r"""
@@ -737,7 +787,8 @@ class TOV:
         """
         return self.max_radius_arr, self.max_pres_arr, self.max_mass_arr
 
-    def central_dens(self, pres_arr=None):
+
+    def central_dens(self):
         r"""
         Calculation to determine the central density of the star
         at the maximum mass and radius determined from the tov_routine().
@@ -757,18 +808,33 @@ class TOV:
                 each EOS used.
         """
 
-        # interpolate the EOS to find the proper central densities
-        p_n_interp = interp1d(
-            self.pres_array_unscaled,
-            self.nB_array,
-            kind="cubic",
-            fill_value="extrapolate",
-        )
+        # store copy of the class variable
+        press = self.pres_array_unscaled
 
-        # solve at the proper central pressure for nB_central
-        c_dens = p_n_interp(self.corr_pres)
+        # check reshaping
+        if press.ndim == 1:
+            press = press[:, None] # [MeV/fm^3]
+
+        # prepare array
+        _, samples = press.shape
+        c_dens = np.zeros([samples])
+
+        # run over samples (or single array)
+        for j in range(samples):
+            
+            # interpolate the EOS to find the proper central densities
+            p_n_interp = interp1d(
+                press[:,j],
+                self.nB_array,
+                kind="cubic",
+                fill_value="extrapolate",
+            )
+
+            # solve at the proper central pressure for nB_central
+            c_dens[j] = p_n_interp(self.max_pres_arr[j])
 
         return c_dens
+
 
     def canonical_NS_radius(self):
         r"""
@@ -785,33 +851,39 @@ class TOV:
                 for each EOS used.
         """
 
-        # interpolate the mass radius result?
-        m_r_interp = interp1d(
-            self.total_mass,
-            self.total_radius,
-            kind="linear",
-            fill_value="extrapolate",
-        )
-        return m_r_interp(1.4)
+        # prepare array
+        samples = len(self.pres_array.T)
+        rad_14 = np.zeros([samples])
+
+        # interpolate the mass radius result
+        for j in range(samples):
+            m_r_interp = interp1d(
+                self.total_mass[:,j],
+                self.total_radius[:,j],
+                kind="linear",
+                fill_value="extrapolate",
+            )
+
+            rad_14[j] = m_r_interp(1.4)
+
+        return rad_14
 
 
 def main():
 
-    filePath = os.getcwd().strip("src")
-    eosName = "sorted_Sly4.dat"
+    filePath = os.getcwd()
+    eosName =  "eos_9_draws.h5"
     fileName = filePath + "/EOS_Data/" + eosName
 
-    print(filePath + "/EOS_Data/")
-
-    tov = TOVsolver(fileName, tidal=False)
+    tov = TOV(fileName, tidal=True)
     start_time = time.time()
-    tov.tov_routine(verbose=True, write_to_file=False)
+    tov.tov_routine(verbose=False, write_to_file=True)  # change if running DRAWS
     end_time = time.time()
     print("Time: {} seconds".format(end_time - start_time))
 
-    print("R of 1.4 solar mass star: ", tov.canonical_NS_radius())
+    print("R of 1.4 solar mass star: ", tov.canonical_NS_radius(), 'km')
 
-    print("Central density: ", tov.central_dens())
+    print("Central density: ", tov.central_dens(), 'fm^-3')
 
 
 if __name__ == "__main__":
