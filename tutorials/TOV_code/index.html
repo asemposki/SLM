@@ -795,6 +795,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pSLM_emulator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parametric SLM Emulator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1452,7 +1480,7 @@ class TOV(builtins.object)
 
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">slmemulator.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_paths</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">paths</span> <span class="o">=</span> <span class="n">get_paths</span><span class="p">()</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">eos_data_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="p">[</span><span class="s1">&#39;eos_data_dir&#39;</span><span class="p">]</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">eos_data_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="p">[</span><span class="s1">&#39;package_eos_data_dir&#39;</span><span class="p">]</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Create an instance of the TOV solver</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">tov</span> <span class="o">=</span> <span class="n">TOV</span><span class="p">(</span><span class="n">eos_data_dir</span> <span class="o">/</span> <span class="s1">&#39;apr_eos.table&#39;</span><span class="p">,</span><span class="n">tidal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1534,7 +1562,7 @@ Max mass:  2.192818228236291 Radius:  9.967329639499997 Central pressure:  1032.
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">slmemulator.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_paths</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">paths</span> <span class="o">=</span> <span class="n">get_paths</span><span class="p">()</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">eos_data_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="p">[</span><span class="s1">&#39;eos_data_dir&#39;</span><span class="p">]</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">eos_data_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="p">[</span><span class="s1">&#39;package_eos_data_dir&#39;</span><span class="p">]</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">eos_data_dir</span><span class="p">)</span>
 </code></pre></div>
 
@@ -1549,25 +1577,14 @@ Max mass:  2.192818228236291 Radius:  9.967329639499997 Central pressure:  1032.
  'DS_CMF_eos.table',
  'EOS_Quarkyonia.dat',
  'FSUGarnetNStarEOSA.txt',
- 'Gibbs_EOS.dat',
- 'Gibbs_MS_Bag_MFT.dat',
  'MFT_ns6p.dat',
- 'MS_EOS.dat',
- 'MS_fullEOS.dat',
- 'Max_EOS.dat',
- 'NJL_EOS.dat',
- 'Polytrope_1.0_gamma.dat',
- 'Polytrope_K_1.0_Gam_1.5.dat',
  'apr_eos.table',
  'delta_eos.table',
  'eos_tov_20n0.dat',
  'eos_tov_40n0.dat',
  'sortedDD2YDelta.dat',
  'sortedDSeos.dat',
- 'sorted_Sly4.dat',
- 'EOS_Quarkyonia_0.12_380.00.dat',
- 'EOS_Quarkyonia_0.20_380.00.dat',
- 'EOS_Quarkyonia_0.30_380.00.dat']</code>
+ 'sorted_Sly4.dat']</code>
 </pre>
 </div>
 </div>
