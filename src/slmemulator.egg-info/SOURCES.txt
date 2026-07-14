@@ -7,6 +7,7 @@ src/slmemulator/__init__.py
 src/slmemulator/banach_grim.py
 src/slmemulator/cleanData.py
 src/slmemulator/config.py
+src/slmemulator/emulator.py
 src/slmemulator/pSLM.py
 src/slmemulator/pSLM2.py
 src/slmemulator/plotData.py

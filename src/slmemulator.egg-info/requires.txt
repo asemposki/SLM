@@ -2,6 +2,7 @@ numpy
 scipy
 matplotlib
 scikit-learn
+h5py
 
 [docs]
 mkdocs

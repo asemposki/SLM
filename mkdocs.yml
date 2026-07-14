@@ -100,6 +100,7 @@ nav:
       - TOV Code: tutorials/TOV_code.ipynb
       - SLM General: tutorials/SLM_general.ipynb
       - Parametric SLM: tutorials/Parametric_SLM.ipynb
+      - Parametric SLM Emulator: tutorials/pSLM_emulator.ipynb
   - Contributing:
       - contributing.md
 

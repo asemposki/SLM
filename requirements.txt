@@ -2,6 +2,7 @@ numpy
 matplotlib
 scipy
 scikit-learn
+h5py
 mkdocstrings>=0.22.0
 mkdocstrings-python>=1.1.2
 mkdocs-material>=9.1.18

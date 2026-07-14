@@ -19,6 +19,7 @@ dependencies = [
     "scipy",
     "matplotlib",
     "scikit-learn",
+    "h5py",
 ]
 
 classifiers = [
