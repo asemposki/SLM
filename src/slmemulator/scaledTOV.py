@@ -78,7 +78,7 @@ class TOV:
         return p1(nb)
 
     def energy_from_pressure(self, pressure: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        """
+        r"""
         Evaluates scaled energy density ($\epsilon/\epsilon_0$) given the scaled 
         pressure ($P/P_0$) using linear interpolation of the loaded Equation of 
         State (EOS) data.
@@ -103,7 +103,7 @@ class TOV:
             return e1(pressure)
 
     def pressure_from_energy(self, energy: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        """
+        r"""
         Evaluates scaled pressure ($P/P_0$) given the scaled energy density 
         ($\epsilon/\epsilon_0$) using linear interpolation of the loaded 
         Equation of State (EOS) data.

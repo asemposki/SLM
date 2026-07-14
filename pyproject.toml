@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,18 +7,16 @@ name = "slmemulator"
 authors = [
     {name = "Sudhanva Lalit"},
     {name = "Alexandra Semposki"},
-    {name = "Johsua Maldonado"},
+    {name = "Joshua Maldonado"},
 ]
 description = "SLM is a python package for star log-extended emulation. It is based on DMD."
 license = "GPL-3.0-or-later"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 version = "0.1.0"
 dependencies = [
     "numpy",
     "scipy",
-    "pandas",
-    "statistics",
     "matplotlib",
     "scikit-learn",
 ]
@@ -31,7 +29,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[tool.setuptools.packages.find] 
+[project.optional-dependencies]
+test = ["pytest"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "mkdocs-jupyter"]
+
+[tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
@@ -39,9 +41,12 @@ where = ["src"]
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.urls]
-Homepage = "https://github.com/asempsoski/SLM"
+Homepage = "https://github.com/asemposki/SLM"
 Documentation = "https://slm.readthedocs.io/en/latest/"
-Issues = "https://github.com/asemposki/slm/issues"
+Issues = "https://github.com/asemposki/SLM/issues"

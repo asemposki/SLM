@@ -5,12 +5,10 @@
 ###########################################
 import os
 import shutil
-import sys
 from pathlib import Path
-from typing import Optional
 
 # Import default subdirectory names from config for consistent cleanup targets
-from slmemulator.config import (
+from .config import (
     DEFAULT_EOS_FILES_SUBDIR_NAME,
     DEFAULT_RESULTS_SUBDIR_NAME,
     DEFAULT_TOV_DATA_SUBDIR_NAME,
@@ -35,7 +33,7 @@ cleanup_targets = [
 ]
 
 
-def clean_directory(directory: Optional[str] = None) -> None:
+def clean_directory(directory: str | None = None) -> None:
     """
     Recursively cleans a specified directory by removing common project artifacts
     and specific, code-generated subdirectories.

@@ -1,6 +1,13 @@
 numpy
 scipy
-pandas
-statistics
 matplotlib
 scikit-learn
+
+[docs]
+mkdocs
+mkdocs-material
+mkdocstrings[python]
+mkdocs-jupyter
+
+[test]
+pytest

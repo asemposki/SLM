@@ -2,25 +2,30 @@ Metadata-Version: 2.4
 Name: slmemulator
 Version: 0.1.0
 Summary: SLM is a python package for star log-extended emulation. It is based on DMD.
-Author: Sudhanva Lalit, Alexandra Semposki, Johsua Maldonado
+Author: Sudhanva Lalit, Alexandra Semposki, Joshua Maldonado
 License-Expression: GPL-3.0-or-later
-Project-URL: Homepage, https://github.com/asempsoski/SLM
+Project-URL: Homepage, https://github.com/asemposki/SLM
 Project-URL: Documentation, https://slm.readthedocs.io/en/latest/
-Project-URL: Issues, https://github.com/asemposki/slm/issues
+Project-URL: Issues, https://github.com/asemposki/SLM/issues
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Science/Research
 Classifier: Programming Language :: Python
 Classifier: Programming Language :: Python :: 3
 Classifier: Operating System :: OS Independent
-Requires-Python: >=3.9
+Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: scipy
-Requires-Dist: pandas
-Requires-Dist: statistics
 Requires-Dist: matplotlib
 Requires-Dist: scikit-learn
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Provides-Extra: docs
+Requires-Dist: mkdocs; extra == "docs"
+Requires-Dist: mkdocs-material; extra == "docs"
+Requires-Dist: mkdocstrings[python]; extra == "docs"
+Requires-Dist: mkdocs-jupyter; extra == "docs"
 Dynamic: license-file
 
 # Star Log-extended eMulation: SLM

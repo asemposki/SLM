@@ -1,16 +1,14 @@
-# In ~/Documents/Research/Alexandra/SLM/src/slmemulator/plotData.py
+"""Plotting helpers for SLM/DMD results."""
 
-import matplotlib.pyplot as plt
-import scienceplots
-import matplotlib as mpl
+import shutil
 from pathlib import Path
-from mpl_toolkits.mplot3d import Axes3D
-from .scripts import setup_rc_params
-import numpy as np
-import os
-from typing import Tuple, List, Union
 
-# from .config import get_paths # No longer needed for global PLOTS_PATH
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Circle
+
+from .scripts import setup_rc_params
 
 colors = [
     "r",
@@ -49,10 +47,10 @@ __all__ = [
 # os.makedirs(PLOTS_PATH, exist_ok=True)
 # --- END REMOVAL ---
 
-# plt.style.use("science")
-mpl.rcParams["text.usetex"] = True
-mpl.rcParams["axes.linewidth"] = 1.5
 setup_rc_params()
+# Only use LaTeX text rendering when a LaTeX installation is available.
+mpl.rcParams["text.usetex"] = shutil.which("latex") is not None
+mpl.rcParams["axes.linewidth"] = 1.5
 
 
 def _enforce_ratio(
@@ -60,8 +58,8 @@ def _enforce_ratio(
     supx: float,
     infx: float,
     supy: float,
-    infy: float
-) -> Tuple[float, float, float, float]:
+    infy: float,
+) -> tuple[float, float, float, float]:
     """
     Adjusts axis limits to achieve a desired aspect ratio for a plot.
 
@@ -206,8 +204,9 @@ def plot_eigs(
     ax.set_ylabel("Imaginary part")
 
     # Unit circle
+    handles, labels = [points], ["Eigenvalues"]
     if show_unit_circle:
-        unit_circle = plt.Circle(
+        unit_circle = Circle(
             (0.0, 0.0),
             1.0,
             color="green",
@@ -216,14 +215,11 @@ def plot_eigs(
             label="Unit circle",
         )
         ax.add_artist(unit_circle)
+        handles.append(unit_circle)
+        labels.append("Unit circle")
 
     ax.grid(True, linestyle="-.")
-
-    # Legend handling
-    if show_unit_circle:
-        ax.legend([points, unit_circle], ["Eigenvalues", "Unit circle"], loc="best")
-    else:
-        ax.legend([points], ["Eigenvalues"], loc="best")
+    ax.legend(handles, labels, loc="best")
 
     ax.set_aspect("equal")
 
@@ -337,10 +333,10 @@ def plot_slm(
 def plot_slm_rad(
     X: np.ndarray,
     Xdmd: np.ndarray,
-    fileNames_for_labels: List[Union[str, Path]],
-    ylabels: List[str],
-    plots_output_base_path: Union[str, Path],
-    save_to_file: bool = False,
+    fileNames_for_labels: list[str | Path],
+    ylabels: list[str],
+    plots_output_base_path: str | Path,
+    save_to_file: bool = True,
 ) -> None:
     """
     Generates and saves plots comparing Star Log-extended Emulator (SLM) results 
@@ -450,7 +446,7 @@ def plot_slm_rad(
 
         ax.set_title(titleName, fontsize=18)
 
-        # Use the short name for the filename ---
+        # Use the short name for the filename 
         if i < len(FILE_SHORT_NAMES):
             short_name = FILE_SHORT_NAMES[i]
         else:
@@ -533,7 +529,7 @@ def plot_parametric_old(
         if xlim is not None and i < len(xlim):
             ax.set_xlim(xlim[i])
 
-        plt.suptitle([f"p_{j} = {names[1+j]}" for j in range(len(names[1:]))])
+        plt.suptitle(", ".join(f"p_{j} = {names[1 + j]}" for j in range(len(names[1:]))))
         ax.set_xlabel(r"Radius (km)", fontsize=22)
         ax.set_ylabel(
             r"Mass $(M_{\odot})$", fontsize=22
@@ -592,7 +588,7 @@ def plot_parametric(
         axs = [axs]
 
     if tidal:
-        var_labels = ["R_b", "M_b", "k2_tidal"]  # Customize for your specific variables
+        var_labels = ["R_b", "Pres", "M_b", "k2_tidal"]  # Customize for your specific variables
     else:
         var_labels = [
             f"Variable {k+1}" for k in range(Xdmd.shape[0])  # Generic labels
@@ -616,7 +612,7 @@ def plot_parametric(
 
     axs[-1].set_xlabel("Time Step")
     fig.suptitle(f'DMD Prediction vs Exact Data for {name.replace("Data_", "")}')
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.tight_layout(rect=(0, 0.03, 1, 0.95))
 
     # Save the plot to the designated directory
     filename = plots_output_base_path / f"SLMpredict_{name}.png"

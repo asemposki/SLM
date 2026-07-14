@@ -1,3 +1,5 @@
+import shutil
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -26,9 +28,10 @@ def setup_rc_params(presentation=False):
 
     mpl.rcdefaults()  # Set to defaults
 
-    mpl.rc('text', usetex=True)
+    # Only use LaTeX text rendering when a LaTeX installation is available
+    usetex = shutil.which('latex') is not None
+    mpl.rc('text', usetex=usetex)
     mpl.rcParams['font.size'] = fontsize
-    mpl.rcParams['text.usetex'] = True
     mpl.rcParams['font.family'] = 'serif'
 
     mpl.rcParams['axes.labelsize'] = fontsize

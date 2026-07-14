@@ -5,10 +5,11 @@
 ###########################################
 
 import sys
-import os
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 from scipy.interpolate import CubicSpline
+
 from ..config import get_paths
 
 
@@ -114,6 +115,9 @@ def generate_quarkyonia_eos(lamInput, kappa, output_filepath):
         # Output results for each step (replacing write statement)
         # print(f"nb: {nb}, nn/nb: {nn/nb}, nq/nb: {nq/nb}, nu: {nu}, nd: {nd}")
 
+    # Baryon density at which quarks first appear (index into unfiltered nbq)
+    nb_quark_onset = nbq[nQuarks[0]] if nQuarks else None
+
     interpErho = CubicSpline(nbq, epst)
     indices = np.where(nbq >= 0.08)
     nbq = nbq[indices]
@@ -123,14 +127,11 @@ def generate_quarkyonia_eos(lamInput, kappa, output_filepath):
     interpPrho = CubicSpline(nbq, press)
     cs2 = interpPrho(nbq, 1) / interpErho(nbq, 1)
 
-    # Write where quarks begin to appear
-    filename = "quarkyonia_params.txt"
-    if os.path.exists(filename):
-        with open(filename, "a") as f:
-            f.write(f"{kap} {lamInput} {nbq[nQuarks[0]]} \n")
-    else:
-        with open(filename, "w") as f:
-            f.write(f"{kap} {lamInput} {nbq[nQuarks[0]]} \n")
+    # Record where quarks begin to appear, next to the generated EOS file
+    if nb_quark_onset is not None:
+        params_file = output_filepath.parent / "quarkyonia_params.txt"
+        with open(params_file, "a") as f:
+            f.write(f"{kap} {lamInput} {nb_quark_onset} \n")
 
     # Add lowden part
     # Read the lowdensity file
