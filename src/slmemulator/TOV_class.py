@@ -140,8 +140,17 @@ class TOV:
                 self.eps_array = f["edens"][:] / self.eps0
                 self.pres_array = f["pressure"][:] / self.pres0
 
-            # sound speed from spline derivatives with respect to density
-            nB = self.nB_array if self.nB_array.ndim == 1 else self.nB_array[:, 0]
+            # Sound speed from spline derivatives, cs2 = (dP/dnB)/(deps/dnB).
+            # A stored 'soundspeed' dataset is deliberately NOT used: for GP
+            # ensembles it is sampled independently of the P and eps draws,
+            # and that thermodynamic inconsistency destabilizes the tidal
+            # (y) equation. The derivative of the actual P, eps draws is the
+            # consistent choice (and matches the production solver).
+            nB = (
+                self.nB_array
+                if self.nB_array.ndim == 1
+                else self.nB_array[:, 0]
+            )
             pres = np.atleast_2d(self.pres_array.T).T  # (n_points, n_draws)
             eps = np.atleast_2d(self.eps_array.T).T
             dpdeps = np.zeros_like(pres)

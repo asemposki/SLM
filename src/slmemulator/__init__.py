@@ -1,7 +1,14 @@
 """slmemulator: star log-extended emulation (SLM) based on dynamic mode decomposition."""
 
 from .banach_grim import BanachGRIMInterpolator, rbf_kernel
-from .emulator import TOVEmulator, mseos_generator, quarkyonia_generator
+from .emulator import (
+    EOSDrawEmulator,
+    TOVEmulator,
+    load_eos_draws,
+    load_tov_curves,
+    mseos_generator,
+    quarkyonia_generator,
+)
 from .SLM import SLM, augment_data_multiple_columns, solve_tov
 from .TOV_class import TOV
 from .config import get_paths, create_necessary_dirs
@@ -17,6 +24,9 @@ __all__ = [
     "BanachGRIMInterpolator",
     "rbf_kernel",
     "TOVEmulator",
+    "EOSDrawEmulator",
+    "load_eos_draws",
+    "load_tov_curves",
     "quarkyonia_generator",
     "mseos_generator",
     "SLM",
